@@ -16,3 +16,10 @@ The export is configured without build-file compression and without Web threadin
 
 The Unity project contains the editable model and C# behavior. Changes made there need a new Web build before they appear in the browser.
 
+
+## Brain marker update
+The floating brain marker is disabled in the saved Unity scene, and its legacy marker reference is cleared. The exposed brain mesh remains clickable.
+
+This local update replaces only `data.unity3d` inside the Web data archive, using scene assets exported by the same Unity Editor. It retains the original working executable and IL2CPP metadata. Full rebuild attempts were cancelled after optimizer failures and long optimization times. The updated page was verified in the browser: marker hidden, brain mesh opens the Brain explanation.
+
+The scene-only packaging helper is `AnatomyExplorer/AgentScripts/package_scene_update.py` in the source workspace. It is intended only for scene changes with unchanged runtime field layouts and Unity version; code changes require a complete build.
