@@ -94,7 +94,12 @@ def make_handler(path):
             # Everything under /anatomy/ is the Unity build plus the blood and
             # immune monitor it opens.
             if route == '/anatomy':
-                return self.send(301, b'', 'text/plain; charset=utf-8')
+                # Unity's page uses relative paths, so the trailing slash matters.
+                page = ('<!doctype html><meta charset="utf-8">'
+                        '<meta http-equiv="refresh" content="0;url=/anatomy/">'
+                        '<title>Anatomy Explorer</title>'
+                        '<a href="/anatomy/">Open the anatomy explorer</a>')
+                return self.send(200, page.encode(), 'text/html; charset=utf-8')
             if route.startswith('/anatomy/'):
                 rel = route[len('/anatomy/'):] or 'index.html'
                 target = (ANATOMY / rel).resolve()
