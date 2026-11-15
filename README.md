@@ -22,8 +22,8 @@ python3 sans_web.py --data mission_02.json --port 8001
 
 1. Set the preflight baseline for each eye. Established baselines are fixed.
 2. Enter the flight day and TRT for one or both eyes, then confirm measurement quality.
-3. Review the latest observation, baseline deviation, interval rate, signed integral, and trend chart. Switch eyes independently.
-4. Open Measurement history to inspect, delete incorrect records, or export CSV.
+3. Review both eyes together on Overview: latest scan day, baseline change, research-threshold status and a short next-step checklist. Open Additional analysis for rate, integral and forecast.
+4. Open Measurement history for the per-eye trend chart, full measurement table, deletion of incorrect records, or CSV export.
 5. Optionally enable experimental rate review and linear extrapolation in Analysis settings. These settings last for the server session.
 
 Explore demo uses fictional measurements without modifying saved records. Return to my data to resume entry. Print report includes the overview and both eyes' history.
@@ -34,6 +34,10 @@ The server binds to loopback only. Records are saved to `sans_data.json` beside 
 
 All calculations use `sans.HealthController` through `sans.analyze`: fixed baseline deviation, relative change, interval-average rate, signed trapezoidal integral from the first recorded observation, and the model's strict +19.4 μm threshold comparison. Missing baselines and first measurements retain their original unavailable-value behavior. The interface is a research prototype, not a diagnostic or treatment system.
 
-The page uses system fonts if optional Google Fonts cannot load. No measurement data is sent to a cloud backend.
+The interface uses system fonts and has no external font dependency. No measurement data is sent to a cloud backend.
 
 The original CLI remains available: `python3 sans.py`.
+
+## Crew interface
+
+Overview prioritizes both eyes, input and next steps. Warm red with a triangle denotes research-threshold exceedance, green with explicit text denotes non-exceedance (not a healthy diagnosis), grey denotes unavailable assessment, and amber denotes an experimental measurement-review flag. Colors always have text labels. The OCT quick guide at `/learn` provides a short scan-to-entry checklist; longer research explanations and sources are collapsed. These are research-method summaries, not a mission-approved OCT operating procedure.

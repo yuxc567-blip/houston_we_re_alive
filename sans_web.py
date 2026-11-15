@@ -62,7 +62,7 @@ def make_handler(path):
                     writer.writeheader()
                     writer.writerows(rows)
                 return self.send(200, stream.getvalue().encode('utf-8-sig'), 'text/csv; charset=utf-8')
-            files = {'/': ('index.html', 'text/html'), '/app.js': ('app.js', 'text/javascript'),
+            files = {'/': ('index.html', 'text/html'), '/learn': ('learn.html', 'text/html'), '/app.js': ('app.js', 'text/javascript'),
                      '/style.css': ('style.css', 'text/css')}
             if route in files:
                 name, mime = files[route]
