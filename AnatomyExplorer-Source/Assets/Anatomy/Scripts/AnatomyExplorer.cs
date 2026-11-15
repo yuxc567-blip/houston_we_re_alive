@@ -34,21 +34,10 @@ public class AnatomyExplorer : MonoBehaviour
     Vector3 rotationCenterLocal, restPosition;
     Quaternion restRotation;
 
-    public static readonly string[] Titles = { "Brain", "Heart", "Bones", "Eyes", "Immune system" };
-    public static readonly string[] Summaries = {
-        "Your brain coordinates thought, memory, emotion, movement and many automatic body functions.",
-        "Your heart is a muscular pump that keeps blood moving through your lungs and the rest of your body.",
-        "Your skeleton supports your body, protects organs and works with muscles to make movement possible.",
-        "Your eyes collect light. The retina converts that light into signals that travel to your brain.",
-        "Your immune system is a network of cells, tissues and organs that helps protect you from infection."
-    };
-    public static readonly string[] Details = {
-        "Nervous system\n\nThe cerebrum supports thinking and voluntary movement. The cerebellum helps coordinate balance and movement. The brainstem helps regulate breathing and other vital functions.\n\nProtected inside your skull, the brain communicates with the body through the spinal cord and nerves.",
-        "Circulatory system\n\nThe right side sends blood to the lungs, where it picks up oxygen. The left side sends oxygen-rich blood to the body. Four chambers and one-way valves keep blood moving in the right direction.\n\nThe heart lies between the lungs, slightly left of the center of the chest.",
-        "Skeletal system\n\nBones are living tissues. They store minerals, continually remodel, and contain marrow. Red marrow makes blood cells.\n\nThe skull protects the brain, ribs help protect the heart and lungs, and the spine supports the body and protects the spinal cord.",
-        "Visual system\n\nThe cornea and lens focus light onto the retina at the back of each eye. Rods help with dim-light vision; cones support color and fine detail. The optic nerves carry signals to the brain.\n\nThe iris changes pupil size to help control how much light enters.",
-        "A distributed defense network\n\nWhite blood cells recognize and respond to threats. Lymph nodes filter lymph and provide meeting places for immune cells. The spleen filters blood; bone marrow produces blood cells; the thymus helps T cells mature.\n\nGreen markers show representative lymph-node regions. The immune system is spread throughout the body, rather than being one organ."
-    };
+    // Compatibility views for existing setup and verification helpers.
+    public static string[] Titles => System.Array.ConvertAll(AnatomyTopics.All, topic => topic.Title);
+    public static string[] Summaries => System.Array.ConvertAll(AnatomyTopics.All, topic => topic.Summary);
+    public static string[] Details => System.Array.ConvertAll(AnatomyTopics.All, topic => topic.Details);
 
     void Awake()
     {
@@ -82,9 +71,10 @@ public class AnatomyExplorer : MonoBehaviour
 
     public void SelectTopic(int id)
     {
-        if (id < 0 || id >= Titles.Length) return;
+        if (id < 0 || id >= AnatomyTopics.All.Length) return;
         Selected = id;
-        heading.text = Titles[id]; explanation.text = Summaries[id]; detail.text = Details[id];
+        var topic = AnatomyTopics.All[id];
+        heading.text = topic.Title; explanation.text = topic.Summary; detail.text = topic.Details;
         if (explanationOverlay != null) explanationOverlay.SetActive(true);
         help.SetActive(false);
         dragging = false;
