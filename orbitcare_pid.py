@@ -30,7 +30,7 @@ from math import isfinite
 from pathlib import Path
 from statistics import median
 
-from PID import HealthController
+from control_loop import HealthController
 
 # ============================================================================
 # ANALYTE CONFIGURATION
@@ -366,15 +366,17 @@ class AnalyteController:
         rcv = cfg["rcv_long"] if horizon == "long" else cfg["rcv_short"]
         self.rcv = rcv
 
-        # PID.py thresholds are relative deviations, so RCV is passed directly.
-        # warning = 1 RCV, critical = 2 RCV.
+        # control_loop.py thresholds are relative deviations, so RCV is passed
+        # directly. warning = 1 RCV, critical = 2 RCV. The *_rate arguments are
+        # changes per checking interval (one day), so a rate of one RCV means
+        # one RCV per day, and two RCV per day is critical.
         self.engine = HealthController(
             std=self.std,
             warning=rcv,
             critical=2 * rcv,
-            window_days=30,
-            rate_scale=rcv,          # a full RCV of error per day saturates trend
-            accumulated_scale=5.0 * rcv,  # the engine integrates fractional error
+            warning_rate=rcv,
+            critical_rate=2 * rcv,
+            prediction_days=7,       # urgency projects one week ahead
         )
 
         # SPC rule 4: a run of consecutive readings on the same side of the
@@ -473,10 +475,10 @@ class AnalyteController:
             "deviation_pct": round(deviation_pct * 100, 1),
             "error_rcv": error_rcv,
             "intervention_status": out["intervention_status"],
-            "urgency_score": out["urgency_score"],
+            "urgency_score": None,   # control_loop reports a level, not a score
             "urgency_level": out["urgency_level"],
             "accumulated_error": round(out["accumulated_error"], 3),
-            "deterioration_rate": round(out["deterioration_rate"], 4),
+            "deterioration_rate": round(out["error_rate"], 4),
             "rail": rail,
             "implausible": implausible,
             "escalate": escalate,
@@ -508,8 +510,14 @@ class Panel:
             if name in self.controllers and value is not None and isfinite(value)
         ]
         # Check the entire sample before advancing any controller.
+        # control_loop.py has no elapsed_days(), so the ordering check is done
+        # here against the rate tracker's own previous timestamp.
         for ctrl, _ in valid:
-            ctrl.engine.deterioration.elapsed_days(timestamp)
+            prev = ctrl.engine.deterioration.previous_time
+            if prev is not None and (timestamp - prev).total_seconds() <= 0:
+                raise ValueError(
+                    "Timestamp must be later than previous measurement."
+                )
         out = [ctrl.process(timestamp, value) for ctrl, value in valid]
         if valid:
             self.last_timestamp = timestamp
