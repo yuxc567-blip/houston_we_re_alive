@@ -134,6 +134,11 @@
             loadingContainer.style.display = "none";
           }
         }).then((unityInstance) => {
+                // expose the instance so the monitor can talk to the scene
+                window.unityInstance = unityInstance;
+                if (window.OrbitCare && window.OrbitCare._onUnityReady) {
+                  window.OrbitCare._onUnityReady(unityInstance);
+                }
                 document.querySelector("#unity-fullscreen-button").onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };
@@ -146,5 +151,118 @@
       document.body.appendChild(script);
 
     </script>
-  </body>
+  
+  <!-- Blood & immune monitor overlay -->
+  <style>
+    #oc-overlay{position:fixed;inset:0;z-index:30;display:none;background:rgba(3,10,16,.72);
+      backdrop-filter:blur(3px)}
+    #oc-overlay.on{display:block}
+    #oc-panel{position:absolute;inset:2.5vh 2.5vw;background:#06121b;border:1px solid #213a4b;
+      border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.6)}
+    #oc-panel iframe{width:100%;height:100%;border:0;display:block;background:#06121b}
+    #oc-close{position:absolute;top:10px;right:14px;z-index:2;font:500 12px/1 system-ui,sans-serif;
+      color:#b8cad7;background:#0c2331;border:1px solid #213a4b;border-radius:8px;
+      padding:7px 12px;cursor:pointer}
+  </style>
+  <div id="oc-overlay" aria-hidden="true">
+    <div id="oc-panel">
+      <button id="oc-close" type="button">Close &#10005;</button>
+      <iframe id="oc-frame" title="Blood and immune monitor"></iframe>
+    </div>
+  </div>
+  <script>
+    (function(){
+      var overlay = document.getElementById('oc-overlay');
+      var frame   = document.getElementById('oc-frame');
+
+      // The shipped build still opens its own explanation window on topic
+      // select. AnatomyExplorer sits on a GameObject called "Anatomy Explorer",
+      // so the window can be dismissed without rebuilding.
+      function hideUnityPanel(){
+        var u = window.unityInstance;
+        if(!u || typeof u.SendMessage !== 'function') return;
+        try { u.SendMessage('Anatomy Explorer', 'CloseExplanation', ''); } catch(e) {}
+      }
+
+      function open(){
+        if(!frame.src) frame.src = 'immune.html';
+        overlay.classList.add('on');
+        overlay.setAttribute('aria-hidden','false');
+        notifyUnity(true);
+        // Defer one turn: Unity handles the message between frames, after it
+        // has finished the selection that logged the line we reacted to.
+        setTimeout(hideUnityPanel, 0);
+      }
+      function close(){
+        if(!overlay.classList.contains('on')) return;
+        overlay.classList.remove('on');
+        overlay.setAttribute('aria-hidden','true');
+        notifyUnity(false);
+      }
+      function toggle(){ overlay.classList.contains('on') ? close() : open(); }
+      function isOpen(){ return overlay.classList.contains('on'); }
+
+      // ── page -> Unity ────────────────────────────────────────────────
+      // Works once the scene contains an "OrbitCareBridge" object with an
+      // OnMonitorOpen(string) method. Silent no-op until then.
+      function notifyUnity(open){
+        var u = window.unityInstance;
+        if(!u || typeof u.SendMessage !== 'function') return;
+        try { u.SendMessage('OrbitCareBridge', 'OnMonitorOpen', open ? '1' : '0'); }
+        catch(e) {}
+      }
+
+      // ── Unity -> page, without rebuilding the build ─────────────────
+      // AnatomyExplorer logs every topic selection with Debug.Log, and the
+      // loader routes Module.print to console.log. Watching that stream is
+      // enough to know which topic is open, so the scene needs no change.
+      var TOPIC_OPEN  = /Selected\s+Immune system/i;
+      var TOPIC_OTHER = /Selected\s+(Brain|Heart|Bones|Eyes)\b/i;
+      var VIEW_RESET  = /View reset/i;
+
+      (function hookConsole(){
+        var native = console.log;
+        console.log = function(){
+          try {
+            var msg = Array.prototype.map.call(arguments, function(a){
+              return (typeof a === 'string') ? a : '';
+            }).join(' ');
+            if(TOPIC_OPEN.test(msg)) open();
+            else if(TOPIC_OTHER.test(msg) || VIEW_RESET.test(msg)) close();
+          } catch(e) {}
+          return native.apply(console, arguments);
+        };
+      })();
+
+      // ── programmatic entry points (kept for the rebuilt build) ───────
+      window.OrbitCare = { open: open, close: close, toggle: toggle, isOpen: isOpen,
+                           _onUnityReady: function(){ if(isOpen()) notifyUnity(true); } };
+      window.addEventListener('orbitcare:open', open);
+      window.addEventListener('orbitcare:close', close);
+      window.addEventListener('orbitcare:toggle', toggle);
+
+      // ── postMessage ─────────────────────────────────────────────────
+      window.addEventListener('message', function(e){
+        var d = e && e.data;
+        if(d === 'close-immune') return close();
+        if(d && d.type === 'orbitcare'){
+          if(d.action === 'open') open();
+          else if(d.action === 'close') close();
+          else if(d.action === 'toggle') toggle();
+        }
+      });
+
+      // ── deep link ───────────────────────────────────────────────────
+      try {
+        var qs = new URLSearchParams(location.search);
+        if(qs.get('immune') === '1' || location.hash === '#immune') open();
+      } catch(e) {}
+
+      // ── local controls ──────────────────────────────────────────────
+      document.getElementById('oc-close').addEventListener('click', close);
+      overlay.addEventListener('click', function(e){ if(e.target === overlay) close(); });
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+    })();
+  </script>
+</body>
 </html>

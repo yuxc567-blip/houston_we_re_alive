@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Immune &amp; blood monitor — OrbitCare</title>
+<style>
+  :root{
+    --bg:#06121b;--line:#213a4b;--ink:#e9f2f8;--ink2:#b8cad7;--muted:#7d93a3;
+    --mint:#6fe0c0;--blue:#7fb8ff;--amber:#f2c56f;--red:#ff8e8e;--violet:#b39dff;
+    color-scheme:dark;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);line-height:1.65;
+    background:radial-gradient(800px 400px at 85% -10%,#17405a,transparent 60%),var(--bg);
+    background-attachment:fixed}
+  .wrap{max-width:820px;margin:0 auto;padding:30px 24px 70px}
+
+  header{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    flex-wrap:wrap;margin-bottom:20px}
+  h1{margin:0;font-size:16px;font-weight:650;letter-spacing:.02em}
+  .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  select{background:#0d2230;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:9px 12px;font-size:13px;max-width:330px}
+
+  /* ---- stepper ---- */
+  .stepper{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .step{background:#0d2431;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:9px 15px;font-size:13px;cursor:pointer;min-width:44px}
+  .step:hover:not(:disabled){background:#163845;border-color:#3f8f85}
+  .step:disabled{opacity:.32;cursor:default}
+  .step.primary{background:#163845;border-color:#4a8f84;color:#d5fbf1;font-weight:600;padding:9px 22px}
+  .counter{font-size:13px;color:var(--ink2);margin-left:4px}
+  .counter b{color:var(--ink)}
+  .hint{font-size:11px;color:#5d7488;margin-left:auto}
+
+  /* ---- verdict ---- */
+  .baseline{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:var(--muted)}
+  .baseline i{display:block;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);
+    background:#0a1e2b;transition:background .2s,border-color .2s}
+  .baseline i.pre{background:#12313f}
+  .baseline i.on{background:#4a8f84;border-color:#6fe0c0}
+  .baseline i.abn{background:#6d5a2c;border-color:#f2c56f}
+  .baseline i.bad{background:#6f3a3a;border-color:#ff8e8e}
+  .baseline .lab{margin-left:8px;align-self:center}
+
+  .verdict{border-radius:18px;padding:24px;margin-bottom:16px;
+    border:1px solid var(--line);background:linear-gradient(160deg,#122c3b,#0b1f2b);
+    transition:border-color .25s}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:9px;vertical-align:1px}
+  .level{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+  .headline{font-size:26px;font-weight:680;letter-spacing:-.02em;line-height:1.3;margin:9px 0 7px}
+  .why{font-size:13.5px;color:var(--ink2);margin:0}
+
+  .rows{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+    border-radius:16px;overflow:hidden}
+  .row{display:grid;grid-template-columns:84px 1fr;gap:14px;
+    background:#0c1f2b;padding:14px 18px;align-items:start}
+  .k{font-size:12px;color:var(--muted);letter-spacing:.06em;padding-top:2px}
+  .v{font-size:14px;color:var(--ink2);min-width:0}
+  .v b{color:var(--ink);font-weight:600}
+  .v .big{font-size:19px;font-weight:650;color:var(--ink)}
+  .no{color:#ffb4b4} .yes{color:#a8e6d6}
+  .fade{animation:f .35s ease}
+  @keyframes f{from{opacity:.35}to{opacity:1}}
+
+  details{margin-top:20px;border-top:1px solid var(--line);padding-top:13px}
+  summary{cursor:pointer;font-size:12.5px;color:var(--muted);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";color:var(--muted)}
+  details[open] summary::before{content:"▾ "}
+  .tbl{width:100%;border-collapse:collapse;margin-top:11px;font-size:12.5px}
+  .tbl th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;
+    letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:6px 8px;border-bottom:1px solid #172c3a;color:var(--ink2);
+    font-variant-numeric:tabular-nums}
+  .tbl td:first-child{color:var(--ink)}
+  .marker{margin-top:18px;border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;background:#0a1e2b}
+  .marker[hidden]{display:none}
+  .marker .eyebrow{font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .marker h3{margin:6px 0 3px;font-size:16px}
+  .marker .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .marker svg{width:100%;height:150px;display:block}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:10.5px;color:var(--muted)}
+  .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .sw-band{background:rgba(111,224,192,.22)}
+  .sw-dash{height:0;border-top:1px dashed #4a6b7d;width:14px}
+  .sw-dot{width:7px;height:7px;border-radius:50%;background:var(--mint)}
+  tbody#tblBody tr{cursor:pointer}
+  tbody#tblBody tr:hover td{background:#0e2634}
+  tbody#tblBody tr.on td{background:#12303c}
+  pre{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;
+    color:var(--ink2);background:#081823;border:1px solid var(--line);
+    border-radius:10px;padding:12px;margin-top:10px;max-height:320px;overflow:auto}
+  .foot{margin-top:24px;font-size:11.5px;color:#62798a;line-height:1.7}
+  .tag{font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid currentColor;margin-left:6px}
+  .t-real{color:var(--mint)} .t-syn{color:var(--amber)}
+</style>
+</head>
+<body>
+<div style="position:fixed;top:14px;right:18px;z-index:9">
+  <button onclick="parent.postMessage('close-immune','*')"
+     style="color:#7d93a3;font-size:12px;background:none;cursor:pointer;
+     border:1px solid #213a4b;border-radius:8px;padding:5px 11px;font-family:inherit">
+     Close ✕</button>
+</div>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Immune &amp; blood monitor</h1>
+      <div class="sub">Six decision outputs per reading · CBC panel · RCV-based personal baselines<br><span style="color:#7d93a3">Routine sampling every 7 days; daily once a signal appears</span></div>
+    </div>
+    <select id="caseSel"></select>
+  </header>
+
+  <div class="stepper">
+    <button class="step" id="first">⏮</button>
+    <button class="step" id="prev">← Previous</button>
+    <span class="counter" id="counter">—</span>
+    <button class="step primary" id="next">Next →</button>
+    <button class="step" id="last">⏭</button>
+    <span class="hint">Keyboard ← → also works</span>
+  </div>
+
+  <div class="baseline" id="baselineBar"></div>
+
+  <div class="verdict" id="verdict">
+    <div class="level"><span class="dot" id="dot"></span><span id="levelTxt">—</span><span id="srcTag"></span></div>
+    <div class="headline" id="headline">—</div>
+    <p class="why" id="why"></p>
+  </div>
+
+  <div class="rows" id="rows"></div>
+
+  <details open>
+    <summary>All analytes this reading (<span id="nAnalytes">0</span>)</summary>
+    <table class="tbl">
+      <thead><tr><th>Analyte</th><th>Value</th><th>Baseline</th><th>Δ</th><th>RCV</th><th>Reading</th></tr></thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </details>
+
+  <div class="marker" id="markerCard" hidden>
+    <div class="eyebrow">Single analyte · trajectory</div>
+    <h3 id="mTitle">—</h3>
+    <div class="meta" id="mMeta"></div>
+    <svg id="mSpark" viewBox="0 0 720 150" preserveAspectRatio="none"></svg>
+    <div class="legend">
+      <span><i class="sw-band"></i> Personal range (baseline ± 1 RCV)</span>
+      <span><i class="sw-dash"></i> Personal baseline</span>
+      <span><i class="sw-dot"></i> Each reading</span>
+    </div>
+  </div>
+
+  <details>
+    <summary>Full handover package</summary>
+    <pre id="pkg">—</pre>
+  </details>
+
+  <div class="foot">
+    <b>Baseline</b> is the median of the pre-flight samples (L-92 / L-44; L-3 is excluded because pre-launch stress is already present). Synthetic cases carry their own seven-day pre-flight block.<br>
+    Real data is NASA OSDR OSD-569 (Inspiration4 complete blood count). Synthetic cases exercise analytes a routine CBC cannot reach.<br>
+    Not a medical device: reference change values are indicative, rails are hard overrides only, and nothing here is a diagnosis.
+  </div>
+</div>
+
+<script src="immune-data.js"></script>
+<script>
+const D = window.ENGINE_DATA;
+
+const STATUS = {
+  NORMAL:         ["All clear", "var(--mint)"],
+  WATCH:          ["Watch", "var(--blue)"],
+  ACTION_REVIEW:  ["Action review", "var(--amber)"],
+  RECHECK_SAMPLE: ["Sample suspect", "var(--violet)"],
+  ESCALATE:       ["Escalate", "var(--red)"],
+  STALE:          ["Stale data", "var(--muted)"],
+  NO_DATA:        ["No data", "var(--muted)"],
+};
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const lab = r => r.label;
+const patCN = p => (p && p.title) || "";
+const avoidCN = x => x;
+const nextCN = x => x;
+
+const state = { ci: 0, si: 0, mi: null };
+const caseOf = () => D.cases[state.ci];
+
+function render() {
+  const c = caseOf();
+  const i = Math.max(0, Math.min(state.si, c.samples.length - 1));
+  state.si = i;
+  const s = c.samples[i];
+  const o = s.outputs;
+  const [txt, color] = STATUS[s.status] || [s.status, "var(--muted)"];
+
+  // stepper
+  const phaseTxt = s.phase === "pre"
+    ? `Pre-flight day <b>${-s.day}</b>`
+    : `Mission day <b>${s.day}</b>`;
+  document.getElementById("counter").innerHTML =
+    `${phaseTxt} · ${s.timestamp}　<span style="color:#5d7488">sample ${i + 1}/${c.samples.length}${c.cadence === "weekly" ? " · weekly" : c.cadence === "daily" ? " · daily" : ""}</span>`;
+  document.getElementById("prev").disabled = i === 0;
+  document.getElementById("first").disabled = i === 0;
+  document.getElementById("next").disabled = i === c.samples.length - 1;
+  document.getElementById("last").disabled = i === c.samples.length - 1;
+
+  // verdict
+  const v = document.getElementById("verdict");
+  v.style.borderColor = color;
+  document.getElementById("dot").style.background = color;
+  document.getElementById("levelTxt").textContent = txt;
+  document.getElementById("srcTag").innerHTML =
+    `<span class="tag ${c.source === "real" ? "t-real" : "t-syn"}">${c.source === "real" ? "real data" : "synthetic"}</span>`
+    + (c.cadence_label ? `<span class="tag t-syn" style="margin-left:6px">${c.cadence_label}</span>` : "");
+
+  const pat = o && o.mechanism.pattern;
+  const flagged = s.results.filter(r => r.error_rcv >= 1.0)
+                           .sort((a, b) => b.error_rcv - a.error_rcv);
+
+  const dec = (o && o.mechanism.decisive) || [];
+  const und = (o && o.mechanism.undetermined) || [];
+  const hl = document.getElementById("headline");
+  hl.textContent = dec.length
+    ? dec.map(patCN).join(" or ")
+    : (s.status === "NORMAL" ? "Nothing flagged today" : "No pattern fully established");
+  hl.style.color = dec.length ? color : "var(--ink)";
+
+  document.getElementById("why").textContent = flagged.length
+    ? "Mainly: " + flagged.slice(0, 3)
+        .map(r => `${lab(r)} ${r.deviation_pct > 0 ? "+" : ""}${r.deviation_pct}%`).join(", ")
+    : "Every analyte is within one normal wobble of its personal baseline";
+
+  // baseline / mission strip
+  document.getElementById("baselineBar").innerHTML =
+    c.samples.map((x, k) => {
+      const cls = ["i",
+        x.phase === "pre" ? "pre" : "",
+        k === i ? "on" : "",
+        x.status === "WATCH" || x.status === "ACTION_REVIEW" ? "abn" : "",
+        x.status === "ESCALATE" ? "bad" : ""].filter(Boolean).join(" ");
+      return `<i class="${cls}" title="${x.timestamp} ${x.status}"></i>`;
+    }).join("") +
+    `<span class="lab">Dark = pre-flight baseline (${c.samples.filter(x => x.phase === "pre").length} samples)</span>`;
+
+  // six rows
+  const rows = [];
+  if (!o) {
+    rows.push(["Mechanism", "No pattern triggered on this reading"]);
+    rows.push(["Forecast", "Nothing abnormal, no forecast"]);
+    rows.push(["Do", "Nothing to do"]); rows.push(["Avoid", "Nothing"]);
+    rows.push(["Onset", "—"]);
+    rows.push(["Tests", "No extra tests needed"]);
+    rows.push(["Handover", "Nothing to hand over"]);
+  } else {
+    const decTxt = dec.length
+      ? dec.map(p => `<b>${esc(patCN(p))}</b> (${Math.round(p.confidence * 100)}%, ${p.hits}/${p.present.length} criteria met)`).join("　/　")
+      : `No pattern fully established`;
+    const undTxt = und.length
+      ? `<br><span style="color:var(--muted)">Not excluded: ` +
+        und.map(p => `${esc(patCN(p))} (missing ${p.missing.map(a => a).join(", ")})`).join("; ") +
+        `</span>`
+      : "";
+    rows.push(["Mechanism", decTxt + undTxt]);
+
+    const f = o.forecast;
+    rows.push(["Forecast", f && f.days_to_rail !== null
+      ? `<span class="big">about ${Math.round(f.days_to_rail)} days</span> until ${esc(lab(f))} reaches its rail`
+      : (f ? `No clear trend in ${esc(lab(f))}` : "Too few points to forecast")]);
+
+    rows.push(["Do", (o.action && o.action.length)
+      ? o.action.map(x => `<span class="yes">→ ${esc(x)}</span>`).join("　")
+      : "No specific action recommended"]);
+
+    rows.push(["Avoid", o.contraindication.avoid.length
+      ? o.contraindication.avoid.map(x => `<span class="no">✕ ${esc(avoidCN(x))}</span>`).join("　")
+      : "No contraindications right now"]);
+
+    const a = o.attribution;
+    rows.push(["Onset", a.onset
+      ? (a.event ? `Started ${esc(a.onset)}, matching "${esc(a.event)}"`
+                 : a.age_days ? `Running ${a.age_days} days since ${esc(a.onset)}, no matching event`
+                 : `Started ${esc(a.onset)}, no matching event`)
+      : "No analyte has crossed one reference change value yet"]);
+
+    const onb = o.next_onboard || [];
+    const gnd = o.next_ground || [];
+    rows.push(["Next check",
+      (onb.length ? onb.map(x => `<span class="yes">→ ${esc(x)}</span>`).join("　") : "")
+      + (onb.length && gnd.length ? "<br>" : "")
+      + (gnd.length
+          ? `<span style="color:var(--muted)">Flight surgeon: ${gnd.map(esc).join(" · ")}</span>`
+          : (onb.length ? ""
+             : (o.mechanism.pattern
+                ? "The current panel is enough"
+                : "No specific test yet, keep the routine cadence"))
+        )]);
+
+    rows.push(["Handover", `${o.package.split("\n").length}-line summary`]);
+  }
+
+  document.getElementById("rows").innerHTML = rows.map(([k, val]) =>
+    `<div class="row"><div class="k">${k}</div><div class="v">${val}</div></div>`).join("");
+
+  // details
+  document.getElementById("nAnalytes").textContent = s.results.length;
+  document.getElementById("tblBody").innerHTML = [...s.results]
+    .sort((x, y) => y.error_rcv - x.error_rcv)
+    .map(r => {
+      const cls = r.error_rcv >= 2 ? "var(--red)" : r.error_rcv >= 1 ? "var(--amber)" : "var(--muted)";
+      const verdict = r.rail ? "Past physiological rail"
+        : r.implausible ? "Value not credible"
+        : r.drift ? `${r.drift_run} readings same side`
+        : r.error_rcv >= 2 ? "Marked deviation"
+        : r.error_rcv >= 1 ? "Off baseline"
+        : "Within range";
+      const on = state.mi === r.analyte ? ' class="on"' : '';
+      return `<tr data-a="${esc(r.analyte)}"${on}><td>${esc(lab(r))}</td>
+        <td>${r.value} <span style="color:var(--muted)">${esc(r.unit)}</span></td>
+        <td>${Number(r.std.toFixed ? r.std.toFixed(2) : r.std)}</td>
+        <td style="color:${cls}">${r.deviation_pct > 0 ? "+" : ""}${r.deviation_pct}%</td>
+        <td style="color:${cls}">${r.error_rcv.toFixed(2)}</td>
+        <td style="color:${r.rail || r.implausible ? "var(--red)" : "var(--muted)"}">${verdict}</td></tr>`;
+    }).join("");
+
+  renderMarker();
+  document.getElementById("pkg").textContent = o ? o.package : "Nothing flagged, no handover package generated.";
+
+  // subtle refresh cue
+  v.classList.remove("fade"); void v.offsetWidth; v.classList.add("fade");
+}
+
+function step(n) {
+  const c = caseOf();
+  state.si = Math.max(0, Math.min(state.si + n, c.samples.length - 1));
+  render();
+}
+
+document.getElementById("next").onclick = () => step(1);
+document.getElementById("prev").onclick = () => step(-1);
+document.getElementById("first").onclick = () => { state.si = 0; render(); };
+document.getElementById("last").onclick = () => { state.si = caseOf().samples.length - 1; render(); };
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); step(-1); }
+});
+
+function renderMarker(){
+  const card = document.getElementById("markerCard");
+  const a = state.mi;
+  if(!a){ card.hidden = true; return; }
+  const c = caseOf();
+  const idx = Math.max(0, Math.min(state.si, c.samples.length-1));
+
+  // every reading of this analyte in the case
+  const pts = [];
+  c.samples.forEach((smp, k) => {
+    const r = smp.results.find(x => x.analyte === a);
+    if(r) pts.push({k, day: smp.day, value: r.value, std: r.std,
+                    rcv: r.rcv || 0.10, dev: r.deviation_pct, err: r.error_rcv});
+  });
+  if(!pts.length){ card.hidden = true; return; }
+
+  const any = c.samples[idx].results.find(x => x.analyte === a) || pts[pts.length-1];
+  const base = any.std, rcv = any.rcv || 0.10, band = base * rcv;
+  const first = pts[0], last = pts[pts.length-1];
+  const delta = ((last.value - base) / base) * 100;
+
+  card.hidden = false;
+  document.getElementById("mTitle").textContent = lab(any);
+  document.getElementById("mMeta").innerHTML =
+    `Baseline <b>${base.toFixed(2)}</b> ${esc(any.unit)} · personal range `
+    + `<b>${(base-band).toFixed(2)} – ${(base+band).toFixed(2)}</b>`
+    + ` · over ${pts.length} readings, ${first.value.toFixed(2)} → ${last.value.toFixed(2)} `
+    + `(<span style="color:${delta<0?'var(--red)':'var(--mint)'}">${delta>0?'+':''}${delta.toFixed(1)}%</span>, `
+    + `${Math.abs(delta/100/rcv).toFixed(2)} RCV)`;
+
+  // series
+  const W=720,H=150,P={l:10,r:10,t:12,b:18};
+  let lo=Math.min(base-band, ...pts.map(p=>p.value));
+  let hi=Math.max(base+band, ...pts.map(p=>p.value));
+  const pad=(hi-lo)*0.15 || 1; lo-=pad; hi+=pad;
+  const x=i=>P.l + i*(W-P.l-P.r)/Math.max(pts.length-1,1);
+  const y=v=>P.t + (hi-v)/(hi-lo)*(H-P.t-P.b);
+  const line=pts.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
+  const dots=pts.map((p,i)=>{
+    const cur = p.k===idx;
+    return `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="${cur?5:3}" `
+      + `fill="${cur?'#f2c56f':'#6fe0c0'}" stroke="#0a1e2b" stroke-width="1.5"/>`;
+  }).join("");
+  const ticks=[0, Math.floor(pts.length/2), pts.length-1].filter((v,i,arr)=>arr.indexOf(v)===i)
+    .map(i=>`<text x="${x(i).toFixed(1)}" y="${H-4}" fill="#5d7488" font-size="10" `
+      + `text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}">Day ${pts[i].day}</text>`).join("");
+
+  document.getElementById("mSpark").innerHTML =
+    `<rect x="${P.l}" y="${y(base+band).toFixed(1)}" width="${W-P.l-P.r}" `
+    + `height="${Math.max(0,(y(base-band)-y(base+band))).toFixed(1)}" fill="#6fe0c0" opacity=".12"/>`
+    + `<line x1="${P.l}" y1="${y(base).toFixed(1)}" x2="${W-P.r}" y2="${y(base).toFixed(1)}" `
+    + `stroke="#4a6b7d" stroke-dasharray="4 5"/>`
+    + `<path d="${line}" fill="none" stroke="#6fe0c0" stroke-width="1.8"/>`
+    + dots + ticks;
+}
+
+document.getElementById("tblBody").addEventListener("click", e=>{
+  const tr = e.target.closest("tr[data-a]");
+  if(!tr) return;
+  state.mi = state.mi === tr.dataset.a ? null : tr.dataset.a;
+  render();
+});
+
+const sel = document.getElementById("caseSel");
+sel.innerHTML = D.cases.map((c, i) =>
+  `<option value="${i}">${c.label}${c.cadence ? "　· " + c.cadence_label : ""}</option>`).join("");
+sel.value = "0";
+sel.addEventListener("change", () => {
+  state.ci = +sel.value; state.mi = null;
+  state.si = 0;
+  render();
+});
+
+state.si = 0;
+render();
+</script>
+</body>
+</html>
