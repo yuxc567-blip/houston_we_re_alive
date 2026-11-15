@@ -4,18 +4,15 @@ This folder contains the completed Unity Web build, including `index.html`, `Bui
 
 ## Editable Unity source
 
-**Shared source download: LINK NOT ADDED YET.** Upload `AnatomyExplorer-Source.zip` to a shared Google Drive or OneDrive folder, then replace this line with its download link.
+[Open the editable Unity source on GitHub](https://github.com/yuxc567-blip/houston_we_re_alive/tree/main/AnatomyExplorer-Source).
 
-Suggested drive location: `Houston We Are Alive / Unity Source / AnatomyExplorer-Source.zip`.
+Clone this repository on each device. In Unity Hub, choose **Add project from disk** and select the `AnatomyExplorer-Source` folder inside your local clone. Use **Unity 6000.6.9f1** with **Web Build Support**.
 
-The ZIP contains `Assets`, `Packages`, `ProjectSettings`, `AgentScripts`, and the source README. It excludes generated caches such as `Library`, `Temp`, and `Logs`.
+The source includes `Assets`, `Packages`, `ProjectSettings`, and `AgentScripts`. Generated caches such as `Library`, `Temp`, and `Logs` are excluded by the Unity `.gitignore`.
 
-Download and extract a separate local copy on each device. In Unity Hub, choose **Add project from disk** and select the extracted `AnatomyExplorer` folder. Use **Unity 6000.6.9f1** with **Web Build Support**.
+The five independent organ files are under `AnatomyExplorer-Source/Assets/Anatomy/Scripts/Topics/`. Python scripts remain in this repository and are not yet connected to the viewer.
 
-The five independent organ files are under `Assets/Anatomy/Scripts/Topics/`. Python scripts remain in this repository and are not yet connected to the viewer.
-
-The shared ZIP is a source snapshot. For ongoing simultaneous work, use a Git repository with separate branches. Coordinate scene edits, and avoid opening the same cloud-synced project folder from two devices.
-
+Use separate local clones and Git branches for simultaneous work. Coordinate changes to shared code and Unity scenes.
 
 VS Code Live Server serves it at:
 
@@ -34,3 +31,4 @@ The floating brain marker is disabled in the saved Unity scene, and its legacy m
 This local update replaces only `data.unity3d` inside the Web data archive, using scene assets exported by the same Unity Editor. It retains the original working executable and IL2CPP metadata. Full rebuild attempts were cancelled after optimizer failures and long optimization times. The updated page was verified in the browser: marker hidden, brain mesh opens the Brain explanation.
 
 The scene-only packaging helper is `AnatomyExplorer/AgentScripts/package_scene_update.py` in the source workspace. It is intended only for scene changes with unchanged runtime field layouts and Unity version; code changes require a complete build.
+
