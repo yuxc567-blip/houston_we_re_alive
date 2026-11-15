@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime, timedelta
 
 
 # ============================================================
@@ -68,9 +69,10 @@ class AccumulatedError:
 
 class DeteriorationRate:
 
-    def __init__(self):
+    def __init__(self, checking_freq=86400):  # Default to daily checks
         self.previous_error = None
         self.previous_time = None
+        self.checking_freq = checking_freq
 
     def calculate(self, timestamp, error):
 
@@ -81,7 +83,7 @@ class DeteriorationRate:
 
         dt = (
             timestamp - self.previous_time
-        ).total_seconds() / 86400
+        ).total_seconds() / self.checking_freq #convert from seconds
 
         if dt <= 0:
             raise ValueError("Timestamp must increase.")
@@ -255,3 +257,4 @@ class HealthController:
             "intervention_status": status.value,
             "urgency_level": urgency["level"]
         }
+    
