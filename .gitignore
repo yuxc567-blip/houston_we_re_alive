@@ -1,2 +1,14 @@
 __pycache__/
 *.pyc
+
+# Local Unity caches and generated project files
+/AnatomyExplorer-Source/[Ll]ibrary/
+/AnatomyExplorer-Source/[Tt]emp/
+/AnatomyExplorer-Source/[Oo]bj/
+/AnatomyExplorer-Source/[Ll]ogs/
+/AnatomyExplorer-Source/[Uu]ser[Ss]ettings/
+/AnatomyExplorer-Source/Data/Plugins/lib_burst_generated.*
+/AnatomyExplorer-Source/*.csproj
+/AnatomyExplorer-Source/*.sln
+/AnatomyExplorer-Source/*.slnx
+/AnatomyExplorer-Source.zip
