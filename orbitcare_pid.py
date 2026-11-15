@@ -1,25 +1,3 @@
-"""
-OrbitCare — adapter layer for the team PID controller (PID.py).
-
-Does not modify PID.py. Wraps HealthController so that the evidence-based
-configuration from the research work can drive it unchanged.
-
-Three things the adapter fixes:
-
-1. PID.py's Error is unilateral: error = (std - current) / std. That is correct
-   only for markers where LOW is bad. For a high-bad marker such as CRP or RDW
-   the error becomes negative and never reaches a threshold. Solved here by
-   transforming the input value per direction, so PID.py needs no change.
-
-2. PID.py's thresholds are fixed relative deviations (0.03 / 0.05). Thresholds
-   must instead be the analyte's own reference change value: a 5% fall in
-   haemoglobin is inside normal noise, while a 5% rise in sodium is not.
-
-3. PID.py has no physiological rail. A value can be "only 8% from baseline" and
-   still be a clinical emergency.
-
-Run:  python3 orbitcare_pid.py --demo
-"""
 
 from __future__ import annotations
 
