@@ -12,6 +12,10 @@ Reviewed 2026-11-15. Scope: plain-English `/learn` module. The source notes belo
 | Pardon 2022, DOI 10.1001/jamaophthalmol.2022.1946 | PMC full-text HTML accessible. Inspected OCT methods and results defining ODE using TRT250 >19.4 μm. PDF/supplements not reviewed. | Background threshold cross-check only. |
 | Nordmann, OCT & Optic nerve, hosted by ZEISS | PDF text accessible. Inspected basic optical principles, printed pp. 16–18 (PDF pp. 11–12). Not read in full. | Light/reference-path explanation only. Not a Spectralis manual. |
 | Space Apps challenge URL from handoff | Retrieval failed. | Did not claim independent verification of the challenge wording; implemented the user's request for non-specialist education. |
+| NASA NTRS 2020, Use of Otoacoustic Emission Phase Change to Evaluate Countermeasures for SANS | NASA technical-report text retrieved and relevant sections reviewed. | Describes LBNP, ITD and VTC studies; notes posture-dependent results and limitations of interpreting OAE response as countermeasure effectiveness. |
+| NASA NTRS 2021, Mitigating Headward Fluid Shifts with Venoconstrictive Thigh Cuffs during Spaceflight | NASA record abstract/study design reviewed. | Describes planned in-flight cuff fit checks and measurements; treated as study design, not an efficacy result. |
+| Ong et al. 2023, SANS: Proposed Pathogenesis, Terrestrial Analogs, and Emerging Countermeasures (NASA NTRS accepted manuscript) | Retrieved manuscript text; inspected relevant countermeasure sections, not a full-paper review. | Rationale for LBNP, candidate nutrition/B-vitamin research, and other emerging approaches; labeled as investigational. |
+| Moestl et al. 2025, Mechanical countermeasures during 30-day head-down tilt bed rest | PMC full-text HTML accessible. Read abstract, introduction, and study design/method context. | LBNP and thigh-cuff equipment/method context in a NASA–DLR terrestrial analog; explicitly distinguished tolerability/methodology from proven flight efficacy. |
 
 ## Source links
 
@@ -22,6 +26,10 @@ Reviewed 2026-11-15. Scope: plain-English `/learn` module. The source notes belo
 - Macias 2021: https://pmc.ncbi.nlm.nih.gov/articles/PMC8085766/
 - Pardon: https://pmc.ncbi.nlm.nih.gov/articles/PMC9204621/
 - OCT principles: https://www.zeiss.co.uk/content/dam/med-hcp/united-kingdom/downloads/dbb/oct-imaging-downloads/clinical-support/5.pdf
+- NASA NTRS 2020 countermeasure study: https://ntrs.nasa.gov/citations/20200001310
+- NASA NTRS 2021 VTC study design: https://ntrs.nasa.gov/citations/20210022625
+- NASA NTRS accepted SANS countermeasure review: https://ntrs.nasa.gov/citations/20220008786
+- Moestl et al. 2025 mechanical countermeasure methods: https://pmc.ncbi.nlm.nih.gov/articles/PMC11891356/
 
 ## Editorial decisions
 
@@ -29,6 +37,7 @@ Reviewed 2026-11-15. Scope: plain-English `/learn` module. The source notes belo
 - Use Laurie’s primary precision methods to explain the variability band; avoid presenting it as a probability of individual disease or a population-mean CI.
 - The OCT sequence is a study-method summary, not an operational procedure. Do not invent positioning, instrument button presses, calibration, scan acceptance limits or clinical escalation deadlines.
 - The record/quality/medical-review checklist is labeled as the prototype workflow. No treatment or medication is recommended by the numerical flag.
+- Countermeasure descriptions distinguish each logged category from a proven intervention. Mechanical-device explanations summarize research intent, while medication/supplement entries require medical-team direction; the app's before/after scan pairing is observational and cannot establish causation or effectiveness.
 - The anatomy schematic is original, simplified and not to scale. It does not depict patient data or diagnose pathology.
 
 ## Crew-interface revision

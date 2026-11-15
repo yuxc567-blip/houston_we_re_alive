@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import sans
+import interventions
 
 ROOT = Path(__file__).resolve().parent
 
@@ -27,13 +28,15 @@ def positive(value, label, zero=False):
 
 
 def payload(data, settings):
-    return {'eyes': {eye: {'baseline': data['eyes'][eye]['baseline'],
-                          'results': sans.analyze(data, eye, **settings)} for eye in sans.EYES},
-            'settings': settings}
+    eyes = {eye: {'baseline': data['eyes'][eye]['baseline'],
+                  'results': sans.analyze(data, eye, **settings)} for eye in sans.EYES}
+    return {'eyes': eyes, 'settings': settings,
+            'interventions': interventions.comparisons(data.get('interventions', []), eyes)}
 
 
 def make_handler(path):
     data = sans.load_data(path)
+    interventions.validate(data)
     settings = {'rate_review_threshold': None, 'prediction_days': None}
 
     class Handler(BaseHTTPRequestHandler):
@@ -53,7 +56,12 @@ def make_handler(path):
             if route == '/api/data':
                 return self.send(200, payload(data, settings))
             if route == '/api/demo':
-                return self.send(200, payload(sans.demo_data(), settings))
+                demo = sans.demo_data()
+                demo['interventions'] = interventions.demo_records()
+                return self.send(200, payload(demo, settings))
+            if route == '/api/export-linked':
+                return self.send(200, {'raw_records': data, 'analysis': payload(data, settings),
+                                       'pairing': 'Latest scan strictly before start day; first scan strictly after end day. Same-day scans excluded.'})
             if route == '/api/export':
                 rows = [dict(eye=eye, **r) for eye in sans.EYES for r in sans.analyze(data, eye, **settings)]
                 stream = io.StringIO()
@@ -85,9 +93,24 @@ def make_handler(path):
                 if route == '/api/settings':
                     settings = {key: None if body.get(key) in (None, '') else positive(body[key], key.replace('_', ' '))
                                 for key in settings}
-                elif route in ('/api/baseline', '/api/record', '/api/delete'):
+                elif route in ('/api/baseline', '/api/record', '/api/delete', '/api/intervention', '/api/intervention-delete'):
                     candidate = copy.deepcopy(data)
-                    if route == '/api/baseline':
+                    if route == '/api/intervention':
+                        records = candidate.setdefault('interventions', [])
+                        existing_id = body.get('id')
+                        if existing_id:
+                            match = next((i for i, r in enumerate(records) if r['id'] == existing_id), None)
+                            if match is None:
+                                raise ValueError('Countermeasure record not found.')
+                            records[match] = interventions.normalize(body, existing_id)
+                        else:
+                            records.append(interventions.normalize(body))
+                    elif route == '/api/intervention-delete':
+                        records = candidate.get('interventions', [])
+                        if not any(r['id'] == body.get('id') for r in records):
+                            raise ValueError('Countermeasure record not found.')
+                        candidate['interventions'] = [r for r in records if r['id'] != body.get('id')]
+                    elif route == '/api/baseline':
                         if body.get('quality') is not True:
                             raise ValueError('Please confirm measurement quality.')
                         if all(body.get(e) in (None, '') for e in sans.EYES):
@@ -115,6 +138,7 @@ def make_handler(path):
                             raise ValueError('Select a valid eye.')
                         day = positive(body.get('day'), 'Flight day', zero=True)
                         candidate['eyes'][eye]['records'] = [r for r in candidate['eyes'][eye]['records'] if r['flight_day'] != day]
+                    interventions.validate(candidate)
                     sans.save_data(path, candidate)
                     data = candidate
                 else:
