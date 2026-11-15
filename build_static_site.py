@@ -8,7 +8,7 @@ Layout:
     site/
     ├── index.html            SANS monitor (reads sans-static.js, demo mode)
     ├── app.js  style.css  sans-static.js  learn.html
-    └── anatomy/              Unity build, untouched
+    └── anatomy-explorer/     Unity build, untouched
         ├── index.html
         ├── immune.html       blood and immune monitor
         ├── immune-data.js
@@ -65,7 +65,7 @@ def main() -> None:
         shutil.copy2(WEB / name, SITE / name)
 
     # The Unity page and the monitor it opens.
-    shutil.copytree(ANATOMY, SITE / 'anatomy')
+    shutil.copytree(ANATOMY, SITE / 'anatomy-explorer')
 
     total = sum(p.stat().st_size for p in SITE.rglob('*') if p.is_file())
     count = sum(1 for p in SITE.rglob('*') if p.is_file())
