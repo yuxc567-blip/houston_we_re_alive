@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Blink counter</title>
+	<style>
+		:root { color-scheme: light; font: 16px system-ui, sans-serif; color: #172033; background: #f3f5f8; }
+		body { min-height: 100vh; display: grid; place-items: center; margin: 0; }
+		main { width: min(720px, calc(100% - 2rem)); padding: 2rem 0; text-align: center; }
+		video { display: block; width: 100%; max-height: 55vh; margin: 1.5rem auto; background: #172033; object-fit: contain; transform: scaleX(-1); }
+		button { margin: .25rem; border: 0; border-radius: 8px; padding: .8rem 1.2rem; background: #2457d6; color: white; font: inherit; cursor: pointer; }
+		button:hover:not(:disabled) { background: #1946b5; }
+		button:disabled { cursor: not-allowed; opacity: .55; }
+		.stats { display: flex; justify-content: center; gap: 3rem; margin: 1.5rem 0; }
+		.stats p { margin: 0; color: #566176; }
+		.stats output { display: block; margin-top: .25rem; color: #172033; font-size: 2rem; font-weight: 700; }
+		#status { min-height: 1.5em; color: #566176; }
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Blink counter</h1>
+		<p>Start the webcam to see the blink score and count.</p>
+		<button id="start-camera" type="button">Start webcam</button>
+		<button id="stop-camera" type="button" disabled>Stop webcam</button>
+		<video id="preview" autoplay playsinline muted></video>
+		<div class="stats" aria-live="polite">
+			<p>Blink score<output id="blink-score">—</output></p>
+			<p>Blinks<output id="blink-count">0</output></p>
+		</div>
+		<p id="status" role="status">Camera is off.</p>
+	</main>
+	<script type="module" src="./blink_counter.js"></script>
+</body>
+</html>
