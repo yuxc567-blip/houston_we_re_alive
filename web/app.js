@@ -1,10 +1,33 @@
-let state, eye = 'R', demo = false;
+let state, eye = 'R', demo = !!window.SANS_STATIC;
 const $ = s => document.querySelector(s);
 const fmt = (v, digits = 2, signed = false) => v == null ? '—' : `${signed && v > 0 ? '+' : ''}${Number(v).toFixed(digits)}`;
 const status = r => !r || r.delta_trt_um == null ? ['Baseline needed', 'neutral'] : r.threshold_status === 'EARLY_ODE_RESEARCH_THRESHOLD_EXCEEDED' ? ['Research threshold exceeded', 'warn'] : ['Research threshold not exceeded', ''];
 let noticeTimer;
 function notice(message, error = false) { $('#notice').textContent = message; $('#notice').className = error ? 'error' : ''; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => $('#notice').textContent = '', 6000); }
-async function request(path, body) { const res = await fetch(path, body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Request failed. Please try again.'); return data; }
+const STATIC = window.SANS_STATIC || null;
+const READ_ONLY = 'This is a read-only showcase. Run sans_web.py locally to enter measurements.';
+function staticDownload(name, text) {
+  const blob = new Blob(['\ufeff' + text], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function request(path, body) {
+  if (STATIC) {
+    if (body === undefined) {
+      if (path === '/api/demo') return JSON.parse(JSON.stringify(STATIC.demo));
+      if (path === '/api/data') return JSON.parse(JSON.stringify(STATIC.data));
+      if (path === '/api/export-linked') return JSON.parse(JSON.stringify(STATIC.exportLinked));
+      if (path === '/api/export') { staticDownload('sans_export.csv', STATIC.exportCsv); return {}; }
+    }
+    throw new Error(READ_ONLY);
+  }
+  const res = await fetch(path, body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed. Please try again.');
+  return data;
+}
 async function load() { state = await request(demo ? '/api/demo' : '/api/data'); render(); }
 const eyeName = e => e === 'R' ? 'Right eye' : 'Left eye';
 const isExceeded = r => r?.threshold_status === 'EARLY_ODE_RESEARCH_THRESHOLD_EXCEEDED';
