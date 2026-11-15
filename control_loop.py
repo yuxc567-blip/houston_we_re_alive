@@ -108,17 +108,16 @@ class Status(Enum):
 
 
 class InterventionStatus:
-
     def __init__(self, warning, critical):
-        self.warning = warning
-        self.critical = critical
+        self.warning = warning   # e.g., 0.05 (5% deviation)
+        self.critical = critical # e.g., 0.10 (10% deviation)
 
     def evaluate(self, error):
+        abs_error = abs(error)
 
-        if error >= self.critical:
+        if abs_error >= self.critical:
             return Status.ACTION_REVIEW
-
-        elif error >= self.warning:
+        elif abs_error >= self.warning:
             return Status.WATCH
 
         return Status.NORMAL
@@ -142,7 +141,7 @@ class Urgency:
         critical,
         warning_rate,
         critical_rate,
-        prediction_days=7
+        prediction_days=7 # Number of days to predict into the future
     ):
 
         self.warning = warning
