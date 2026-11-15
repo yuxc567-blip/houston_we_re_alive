@@ -114,29 +114,22 @@ class DeteriorationRate:
         self.previous_error = None
         self.previous_time = None
 
-    def calculate(self, timestamp, error):
+    def elapsed_days(self, timestamp):
+        if self.previous_time is None:
+            return None
 
-        if self.previous_error is None:
-            self.previous_error = error
-            self.previous_time = timestamp
-            return 0.0
-
-        dt = (
-            timestamp - self.previous_time
-        ).total_seconds() / 86400
-
-        if dt <= 0:
+        days = (timestamp - self.previous_time).total_seconds() / 86400
+        if days <= 0:
             raise ValueError(
                 "Timestamp must be later than previous measurement."
             )
+        return days
 
-        rate = (
-            error - self.previous_error
-        ) / dt
-
+    def calculate(self, timestamp, error):
+        days = self.elapsed_days(timestamp)
+        rate = 0.0 if days is None else (error - self.previous_error) / days
         self.previous_error = error
         self.previous_time = timestamp
-
         return rate
 
 
@@ -275,28 +268,19 @@ class HealthController:
     def process(self, timestamp, current_value):
 
         # 1. Calculate deviation.
-        self.deviation = Deviation(
-            self.std, current_value
-        )
+        next_deviation = Deviation(self.std, current_value)
+        next_error = Error(self.std, current_value)
+        deviation = next_deviation.calculate()
+        error = next_error.calculate()
 
-        deviation = self.deviation.calculate()
+        # Validate the timestamp before storing the new measurement.
+        rate = self.deterioration.calculate(timestamp, error)
+        self.deviation = next_deviation
+        self.error = next_error
 
-        # 2. Calculate relative error.
-        self.error = Error(
-            self.std, current_value
-        )
-
-        error = self.error.calculate()
-
-        # 3. Calculate accumulated error.
+        # 4. Add the accepted reading to the accumulated error.
         self.accumulated.update(timestamp, error)
-
         accumulated = self.accumulated.calculate()
-
-        # 4. Calculate deterioration rate.
-        rate = self.deterioration.calculate(
-            timestamp, error
-        )
 
         # 5. Determine intervention status.
         status = self.status.evaluate(error)
