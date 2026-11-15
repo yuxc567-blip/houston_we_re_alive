@@ -13,6 +13,21 @@ import sans
 import interventions
 
 ROOT = Path(__file__).resolve().parent
+ANATOMY = ROOT / 'anatomy-explorer'
+
+# The Unity build has to be served with these exact types or the browser
+# refuses to instantiate the wasm module.
+STATIC_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.wasm': 'application/wasm',
+    '.data': 'application/octet-stream',
+    '.png': 'image/png',
+    '.ico': 'image/x-icon',
+    '.svg': 'image/svg+xml',
+}
 
 
 def positive(value, label, zero=False):
@@ -75,6 +90,21 @@ def make_handler(path):
             if route in files:
                 name, mime = files[route]
                 return self.send(200, (ROOT / 'web' / name).read_bytes(), mime + '; charset=utf-8')
+
+            # Everything under /anatomy/ is the Unity build plus the blood and
+            # immune monitor it opens.
+            if route == '/anatomy':
+                return self.send(301, b'', 'text/plain; charset=utf-8')
+            if route.startswith('/anatomy/'):
+                rel = route[len('/anatomy/'):] or 'index.html'
+                target = (ANATOMY / rel).resolve()
+                if not str(target).startswith(str(ANATOMY.resolve())):
+                    return self.send(403, {'error': 'Forbidden.'})
+                if target.is_file():
+                    ctype = STATIC_TYPES.get(target.suffix.lower(), 'application/octet-stream')
+                    return self.send(200, target.read_bytes(), ctype)
+                return self.send(404, {'error': 'Not found.'})
+
             self.send(404, {'error': 'Not found.'})
 
         def do_POST(self):

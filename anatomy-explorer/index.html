@@ -184,8 +184,15 @@
         try { u.SendMessage('Anatomy Explorer', 'CloseExplanation', ''); } catch(e) {}
       }
 
-      function open(){
-        if(!frame.src) frame.src = 'immune.html';
+      // Two monitors live behind the anatomy model:
+      //   immune -> the blood panel in this folder
+      //   sans   -> the SANS OCT app, which is the server root
+      var SOURCE = { immune: 'immune.html', sans: '/' };
+      var current = null;
+
+      function open(which){
+        var src = SOURCE[which] || SOURCE.immune;
+        if(src !== current){ frame.src = src; current = src; }
         overlay.classList.add('on');
         overlay.setAttribute('aria-hidden','false');
         notifyUnity(true);
@@ -216,9 +223,10 @@
       // AnatomyExplorer logs every topic selection with Debug.Log, and the
       // loader routes Module.print to console.log. Watching that stream is
       // enough to know which topic is open, so the scene needs no change.
-      var TOPIC_OPEN  = /Selected\s+Immune system/i;
-      var TOPIC_OTHER = /Selected\s+(Brain|Heart|Bones|Eyes)\b/i;
-      var VIEW_RESET  = /View reset/i;
+      var TOPIC_IMMUNE = /Selected\s+Immune system/i;
+      var TOPIC_EYES   = /Selected\s+Eyes\b/i;
+      var TOPIC_OTHER  = /Selected\s+(Brain|Heart|Bones)\b/i;
+      var VIEW_RESET   = /View reset/i;
 
       (function hookConsole(){
         var native = console.log;
@@ -227,7 +235,8 @@
             var msg = Array.prototype.map.call(arguments, function(a){
               return (typeof a === 'string') ? a : '';
             }).join(' ');
-            if(TOPIC_OPEN.test(msg)) open();
+            if(TOPIC_IMMUNE.test(msg)) open('immune');
+            else if(TOPIC_EYES.test(msg)) open('sans');
             else if(TOPIC_OTHER.test(msg) || VIEW_RESET.test(msg)) close();
           } catch(e) {}
           return native.apply(console, arguments);
@@ -235,9 +244,10 @@
       })();
 
       // ── programmatic entry points (kept for the rebuilt build) ───────
-      window.OrbitCare = { open: open, close: close, toggle: toggle, isOpen: isOpen,
+      window.OrbitCare = { open: function(w){ open(w || 'immune'); }, close: close,
+                     toggle: toggle, isOpen: isOpen,
                            _onUnityReady: function(){ if(isOpen()) notifyUnity(true); } };
-      window.addEventListener('orbitcare:open', open);
+      window.addEventListener('orbitcare:open', function(e){ open(e && e.detail); });
       window.addEventListener('orbitcare:close', close);
       window.addEventListener('orbitcare:toggle', toggle);
 
@@ -255,7 +265,9 @@
       // ── deep link ───────────────────────────────────────────────────
       try {
         var qs = new URLSearchParams(location.search);
-        if(qs.get('immune') === '1' || location.hash === '#immune') open();
+        var want = qs.get('monitor');
+        if(want === 'sans' || want === 'immune') open(want);
+        else if(qs.get('immune') === '1' || location.hash === '#immune') open('immune');
       } catch(e) {}
 
       // ── local controls ──────────────────────────────────────────────
