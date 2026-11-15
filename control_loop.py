@@ -38,7 +38,7 @@ class AccumulatedError:
         self.previous_time = None
         self.total = 0.0
 
-    def calculate(self, timestamp, error):
+    def calculate(self, timestamp, error, checking_freq=86400):  # Default to daily checks
 
         if self.previous_error is None:
             self.previous_error = error
@@ -47,7 +47,7 @@ class AccumulatedError:
 
         dt = (
             timestamp - self.previous_time
-        ).total_seconds() / 86400
+        ).total_seconds() / checking_freq #convert from seconds
 
         if dt <= 0:
             raise ValueError("Timestamp must increase.")
@@ -109,7 +109,7 @@ class Status(Enum):
 
 
 class InterventionStatus:
-    def __init__(self, warning, critical):
+    def __init__(self, warning = 0.05, critical = 0.10):
         self.warning = warning   # e.g., 0.05 (5% deviation)
         self.critical = critical # e.g., 0.10 (10% deviation)
 
