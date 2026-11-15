@@ -2,9 +2,20 @@
 
 This folder contains the completed Unity Web build, including `index.html`, `Build/`, `TemplateData/`, and `StreamingAssets/`.
 
-The Unity source project is at:
+## Editable Unity source
 
-`C:\Users\yuxc5\OneDrive\Documents\Codex\AnatomyExplorer`
+**Shared source download: LINK NOT ADDED YET.** Upload `AnatomyExplorer-Source.zip` to a shared Google Drive or OneDrive folder, then replace this line with its download link.
+
+Suggested drive location: `Houston We Are Alive / Unity Source / AnatomyExplorer-Source.zip`.
+
+The ZIP contains `Assets`, `Packages`, `ProjectSettings`, `AgentScripts`, and the source README. It excludes generated caches such as `Library`, `Temp`, and `Logs`.
+
+Download and extract a separate local copy on each device. In Unity Hub, choose **Add project from disk** and select the extracted `AnatomyExplorer` folder. Use **Unity 6000.6.9f1** with **Web Build Support**.
+
+The five independent organ files are under `Assets/Anatomy/Scripts/Topics/`. Python scripts remain in this repository and are not yet connected to the viewer.
+
+The shared ZIP is a source snapshot. For ongoing simultaneous work, use a Git repository with separate branches. Coordinate scene edits, and avoid opening the same cloud-synced project folder from two devices.
+
 
 VS Code Live Server serves it at:
 
