@@ -103,8 +103,8 @@ class DeteriorationRate:
 
 class Status(Enum):
     NORMAL = "NORMAL"
-    WATCH = "WATCH"
-    ACTION_REVIEW = "ACTION_REVIEW"
+    WATCH = "WATCH OUT"
+    ACTION_REVIEW = "ACTION NEEDED"
 
 
 class InterventionStatus:
