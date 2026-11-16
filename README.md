@@ -78,3 +78,20 @@ Run `python sans_web.py`, then open `http://localhost:8000/anatomy/`. The eye mo
 Run `python build_static_site.py` and upload the **contents of `site/`**. Its root opens the anatomy viewer; `eye/web/` and `immune/web/` contain the monitor pages. Relative paths also work under a hosted subdirectory.
 
 The builder regenerates the SANS bundle and reuses the committed immune demo bundle by default. To regenerate immune results, supply the optional `immune/data/OSD-569_CBC.csv` dataset and run `python build_static_site.py --refresh-immune`. Existing calculation rules are unchanged.
+
+
+## Sleep and reaction interface
+
+## Combined sleep and reaction-time dashboard
+
+Run `python sleep/dashboard.py` and open **http://127.0.0.1:8010**. Keep the Python process running. The local webpage combines sleep entry, a measured five-trial reaction-time test, separate charts, history, and JSON export using the existing Python analysis functions.
+
+See [the dashboard guide](sleep/DASHBOARD.md). No external assets or additional packages are required. VS Code Live Server alone cannot execute the Python APIs. Personal records stay local and are excluded from Git.
+
+
+The dashboard also shows exploratory linear trends and user-approved **unvalidated prototype** status/urgency labels. See [the model and evidence audit](sleep/EVIDENCE_AND_MODEL_AUDIT.md) for formulas, thresholds, source pages and limitations. These labels are not diagnoses or a trained clinical urgency model.
+
+
+### Brain sleep and reaction popup
+
+Run `python sleep/dashboard.py`, then open http://127.0.0.1:8010/anatomy/ and click the brain. The large popup uses the live Python sleep/reaction dashboard. See [dashboard instructions](sleep/DASHBOARD.md). Unity source is in `AnatomyExplorer-Source`.

@@ -75,6 +75,7 @@ def main() -> None:
     shutil.copytree(ROOT / 'immune' / 'web', SITE / 'immune' / 'web')
     shutil.copytree(ROOT / 'cardio' / 'web', SITE / 'cardio' / 'web')
     shutil.copytree(ROOT / 'bones' / 'web', SITE / 'bones' / 'web')
+    shutil.copytree(ROOT / 'sleep' / 'web', SITE / 'sleep' / 'web')
     (SITE / 'index.html').write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=anatomy/"><title>Mission health explorer</title><a href="anatomy/">Open anatomy explorer</a>', encoding='utf-8')
 
     # The Unity page and the monitor it opens.
