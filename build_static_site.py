@@ -51,6 +51,7 @@ def main() -> None:
     print('Regenerating data bundles')
     run('export_sans_static.py')
     run('export_demo_data.py')
+    run('export_cardio_data.py')
 
     missing = [f for f in WEB_FILES if not (WEB / f).is_file()]
     if missing:

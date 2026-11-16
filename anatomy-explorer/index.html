@@ -187,7 +187,7 @@
       // Two monitors live behind the anatomy model:
       //   immune -> the blood panel in this folder
       //   sans   -> the SANS OCT app, which is the server root
-      var SOURCE = { immune: 'immune.html', sans: '/' };
+      var SOURCE = { immune: 'immune.html', cardio: 'cardio.html', sans: '/' };
       var current = null;
 
       function open(which){
@@ -225,7 +225,8 @@
       // enough to know which topic is open, so the scene needs no change.
       var TOPIC_IMMUNE = /Selected\s+Immune system/i;
       var TOPIC_EYES   = /Selected\s+Eyes\b/i;
-      var TOPIC_OTHER  = /Selected\s+(Brain|Heart|Bones)\b/i;
+      var TOPIC_HEART  = /Selected\s+Heart\b/i;
+      var TOPIC_OTHER  = /Selected\s+(Brain|Bones)\b/i;
       var VIEW_RESET   = /View reset/i;
 
       (function hookConsole(){
@@ -237,6 +238,7 @@
             }).join(' ');
             if(TOPIC_IMMUNE.test(msg)) open('immune');
             else if(TOPIC_EYES.test(msg)) open('sans');
+            else if(TOPIC_HEART.test(msg)) open('cardio');
             else if(TOPIC_OTHER.test(msg) || VIEW_RESET.test(msg)) close();
           } catch(e) {}
           return native.apply(console, arguments);
@@ -266,7 +268,7 @@
       try {
         var qs = new URLSearchParams(location.search);
         var want = qs.get('monitor');
-        if(want === 'sans' || want === 'immune') open(want);
+        if(want === 'sans' || want === 'immune' || want === 'cardio') open(want);
         else if(qs.get('immune') === '1' || location.hash === '#immune') open('immune');
       } catch(e) {}
 
