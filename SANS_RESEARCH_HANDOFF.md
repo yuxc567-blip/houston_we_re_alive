@@ -204,3 +204,8 @@ This version's core calculations, strict19.4 boundary with floating-point tolera
 After reading this handoff, inspect actual README.md, AGENTS.md if present, `sans.py`, `sans_web.py`, `loop code.py`, and relevant `web` files. Briefly confirm the scope and identify any mismatch, then help run the current local app and its demo. Do not begin another round of choosing indicators.
 
 If asked to make this context persistent, add a concise pointer in AGENTS.md to read this file for SANS/TRT work, preserving existing team instructions; keep detailed research here. Do not claim the original entire ChatGPT transcript or personal memory has been imported.
+
+
+## Repository layout update — 2026-11-15
+
+SANS implementations now live in `eye/` (`sans.py`, `interventions.py`, `server.py`, `export_static.py`); UI and countermeasure guide live in `eye/web/`; education source notes live in `eye/docs/`. Root Python launch/import files remain compatibility entry points. The calculations and scientific interpretation are unchanged. Blood/immune code and UI live in `immune/`. Mission JSON remains at the root for compatibility. The anatomy overlay uses relative feature URLs, supporting both Live Server/static previews and the live Python server.

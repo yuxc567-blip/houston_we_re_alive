@@ -185,13 +185,13 @@
       }
 
       // Two monitors live behind the anatomy model:
-      //   immune -> the blood panel in this folder
-      //   sans   -> the SANS OCT app, which is the server root
-      var SOURCE = { immune: 'immune.html', sans: '/' };
+      // Feature-relative paths work on Live Server, the Python server, and static hosts.
+      var SOURCE = { immune: '../immune/web/index.html', sans: '../eye/web/index.html' };
       var current = null;
 
       function open(which){
         var src = SOURCE[which] || SOURCE.immune;
+        frame.title = which === 'sans' ? 'Eye health and SANS monitor' : 'Blood and immune monitor';
         if(src !== current){ frame.src = src; current = src; }
         overlay.classList.add('on');
         overlay.setAttribute('aria-hidden','false');

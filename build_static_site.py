@@ -5,17 +5,13 @@ Assemble a folder that can be dropped on any static host: no Python, no API.
 
 Layout:
 
-    site/
-    ├── index.html            SANS monitor (reads sans-static.js, demo mode)
-    ├── app.js  style.css  sans-static.js  learn.html
-    └── anatomy/              Unity build, untouched
-        ├── index.html
-        ├── immune.html       blood and immune monitor
-        ├── immune-data.js
-        ├── Build/  TemplateData/  StreamingAssets/
+    site/index.html         opens the anatomy explorer
+    site/anatomy/           Unity browser export
+    site/eye/web/           SANS monitor, countermeasure guide and static data
+    site/immune/web/        blood/immune monitor and existing demo bundle
 
-`sans-static.js` and `immune-data.js` are regenerated first, so the folder is
-never assembled from stale data.
+SANS data is regenerated. The committed immune demo bundle is reused unless
+--refresh-immune is passed (requires the optional NASA CBC dataset).
 
 What the static copy cannot do
     Anything that writes: recording a measurement, editing the baseline,
@@ -24,6 +20,7 @@ What the static copy cannot do
 """
 from __future__ import annotations
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -31,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / 'site'
-WEB = ROOT / 'web'
+WEB = ROOT / 'eye' / 'web'
 ANATOMY = ROOT / 'anatomy-explorer'
 
 WEB_FILES = ['index.html', 'learn.html', 'app.js', 'style.css', 'sans-static.js']
@@ -48,21 +45,33 @@ def run(script: str) -> None:
 
 
 def main() -> None:
-    print('Regenerating data bundles')
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--refresh-immune', action='store_true', help='Regenerate immune data; requires the optional NASA CBC dataset.')
+    args = parser.parse_args()
+    print('Preparing data bundles')
     run('export_sans_static.py')
-    run('export_demo_data.py')
+    if args.refresh_immune:
+        run('export_demo_data.py')
+    else:
+        print('  keeping the committed immune demo bundle (use --refresh-immune to regenerate)')
 
     missing = [f for f in WEB_FILES if not (WEB / f).is_file()]
     if missing:
-        raise SystemExit(f'missing from web/: {missing}')
+        raise SystemExit(f'missing from eye/web/: {missing}')
 
     print(f'Assembling {SITE}')
     if SITE.exists():
+        if SITE.resolve() != ROOT.resolve() / 'site':
+            raise RuntimeError('Unexpected build destination')
         shutil.rmtree(SITE)
     SITE.mkdir()
 
+    eye = SITE / 'eye' / 'web'
+    eye.mkdir(parents=True)
     for name in WEB_FILES:
-        shutil.copy2(WEB / name, SITE / name)
+        shutil.copy2(WEB / name, eye / name)
+    shutil.copytree(ROOT / 'immune' / 'web', SITE / 'immune' / 'web')
+    (SITE / 'index.html').write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=anatomy/"><title>Mission health explorer</title><a href="anatomy/">Open anatomy explorer</a>', encoding='utf-8')
 
     # The Unity page and the monitor it opens.
     shutil.copytree(ANATOMY, SITE / 'anatomy')
