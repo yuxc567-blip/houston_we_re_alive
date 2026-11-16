@@ -292,22 +292,3 @@ PREVENTION_PLANS = {
         }
     }
 }
-
-
-# Initialize database.
-database = PreventionDatabase()
-
-# Initialize prevention.
-prevention = Prevention(
-    database,
-    PREVENTION_PLANS
-)
-
-# Example input from HealthController.
-'''result = prevention.recommend(
-    indicator="bone_density",
-    error=0.06,
-    urgency="MEDIUM"
-)
-
-print(result)'''
