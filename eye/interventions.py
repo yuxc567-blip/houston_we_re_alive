@@ -79,9 +79,26 @@ def comparisons(records, eyes):
 
 
 def demo_records():
-    return [normalize({'kind':'LBNP', 'status':'Completed', 'start_day':75, 'end_day':75,
-                       'notes':'Fictional demo session.'}, 'demo-lbnp'),
-            normalize({'kind':'VTC', 'status':'Completed', 'start_day':76, 'end_day':76,
-                       'notes':'Fictional demo session in the same scan interval.'}, 'demo-vtc'),
+    """Fictional sessions, placed so the demo shows three different outcomes.
+
+    The scans sit on days 10..100. A session pairs the latest scan before its
+    start day with the first scan after its end day, so the span decides how
+    much of the trajectory the comparison covers.
+    """
+    return [normalize({'kind':'LBNP', 'status':'Completed', 'start_day':30, 'end_day':50,
+                       'details':'Lower body negative pressure, 30 min per session',
+                       'notes':'Fictional demo: ran through the steepest part of the rise.'},
+                      'demo-lbnp'),
+            normalize({'kind':'Supplement', 'name':'Vitamin D', 'status':'Completed', 'start_day':44, 'end_day':56,
+                       'details':'Vitamin D 1000 IU daily',
+                       'notes':'Fictional demo: overlaps the LBNP block on purpose.'},
+                      'demo-supplement'),
+            normalize({'kind':'VTC', 'status':'Completed', 'start_day':72, 'end_day':88,
+                       'details':'Venous thigh cuffs during waking hours',
+                       'notes':'Fictional demo: the decline starts inside this window.'},
+                      'demo-vtc'),
             normalize({'kind':'ITD', 'status':'Stopped early', 'start_day':95, 'end_day':95,
-                       'notes':'Fictional demo: discomfort recorded.'}, 'demo-itd')]
+                       'duration_minutes':12,
+                       'details':'Intermittent thigh compression, 12 of 40 min',
+                       'notes':'Fictional demo: discomfort recorded; too recent for a paired scan.'},
+                      'demo-itd')]

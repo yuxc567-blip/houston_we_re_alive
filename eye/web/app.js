@@ -69,7 +69,7 @@ function renderEyeOverview() {
 function render() {
   const item = state.eyes[eye], rows = item.results, last = rows.at(-1), [label, tone] = status(last);
   $('#demo-banner').hidden = !demo; $('#demo').textContent = demo ? 'Viewing demo' : 'Explore demo ↗';
-  for (const form of [$('#record-form'), $('#baseline-form')]) for (const input of form.elements) input.disabled = demo;
+  for (const form of [$('#record-form'), $('#baseline-form')].filter(Boolean)) for (const input of form.elements) input.disabled = demo;
 
   for (const e of ['R','L']) { const input = $('#baseline-form').elements[e]; input.disabled = demo || state.eyes[e].baseline != null; input.value = demo ? '' : state.eyes[e].baseline ?? ''; }
   $('#export').hidden = demo || !['R','L'].some(e => state.eyes[e].results.length);
@@ -106,9 +106,8 @@ function drawChart(rows) {
 }
 for(const button of document.querySelectorAll('[data-view]')) button.onclick=()=>{for(const view of document.querySelectorAll('.view')) view.hidden=view.id!==button.dataset.view;for(const nav of document.querySelectorAll('.nav'))nav.classList.toggle('active',nav.dataset.view===button.dataset.view);$('#page-title').textContent={overview:'Eye health check',history:'Your measurement history',settings:'Make sense of the change',countermeasures:'Countermeasures & response'}[button.dataset.view];};
 for(const button of document.querySelectorAll('[data-eye]'))button.onclick=()=>{eye=button.dataset.eye;for(const b of document.querySelectorAll('[data-eye]')){b.classList.toggle('selected',b.dataset.eye===eye);b.setAttribute('aria-pressed',String(b.dataset.eye===eye));}render();};
-for(const [id,path] of [['record-form','record'],['baseline-form','baseline'],['settings-form','settings']]) $( '#'+id).onsubmit=async event=>{event.preventDefault();const form=event.target,body=Object.fromEntries(new FormData(form));if(id==='baseline-form' && !body.R && !body.L)return notice('Enter a baseline for at least one eye.',true);body.quality=form.elements.quality?.checked === true;const submit=form.querySelector('button[type=submit],button');submit.disabled=true;try{state=await request('/api/'+path,body);if(id!=='settings-form')form.reset();if(id==='baseline-form'){closeBaseline();$('#baseline-feedback').textContent='';}if(id==='record-form'){const savedDay=Number(body.day);const newest=Math.max(...['R','L'].flatMap(e=>state.eyes[e].results.map(r=>r.flight_day)));$('#entry-feedback').textContent=savedDay<newest ? `Saved FD ${savedDay}. Overview continues to show the latest observation for each eye.` : `Saved FD ${savedDay}. Both eye statuses have been updated.`;}if(demo)state=await request('/api/demo');render();notice(id==='settings-form'?'Analysis settings updated.':'Saved. Your analysis is up to date.');}catch(error){if(id==='baseline-form')$('#baseline-feedback').textContent=error.message;notice(error.message,true);}finally{submit.disabled=demo&&id!=='settings-form';}};
+for(const [id,path] of [['record-form','record'],['baseline-form','baseline'],['settings-form','settings']].filter(([id])=>document.getElementById(id))) $( '#'+id).onsubmit=async event=>{event.preventDefault();const form=event.target,body=Object.fromEntries(new FormData(form));if(id==='baseline-form' && !body.R && !body.L)return notice('Enter a baseline for at least one eye.',true);body.quality=form.elements.quality?.checked === true;const submit=form.querySelector('button[type=submit],button');submit.disabled=true;try{state=await request('/api/'+path,body);if(id!=='settings-form')form.reset();if(id==='baseline-form'){closeBaseline();$('#baseline-feedback').textContent='';}if(id==='record-form'){const savedDay=Number(body.day);const newest=Math.max(...['R','L'].flatMap(e=>state.eyes[e].results.map(r=>r.flight_day)));$('#entry-feedback').textContent=savedDay<newest ? `Saved FD ${savedDay}. Overview continues to show the latest observation for each eye.` : `Saved FD ${savedDay}. Both eye statuses have been updated.`;}if(demo)state=await request('/api/demo');render();notice(id==='settings-form'?'Analysis settings updated.':'Saved. Your analysis is up to date.');}catch(error){if(id==='baseline-form')$('#baseline-feedback').textContent=error.message;notice(error.message,true);}finally{submit.disabled=demo&&id!=='settings-form';}};
 $('#demo').onclick=async()=>{try{demo=true;await load();}catch(e){demo=false;notice(e.message,true);}};
-$('#exit-demo').onclick=async()=>{demo=false;try{await load();}catch(e){notice(e.message,true);}};
 $('#history-body').onclick=async event=>{const button=event.target.closest('[data-delete]');if(!button)return;const [e,day]=button.dataset.delete.split(':');if(!confirm(`Delete the ${e==='R'?'right':'left'} eye measurement for flight day ${day}? All derived values will be recalculated.`))return;try{state=await request('/api/delete',{eye:e,day:Number(day)});render();notice('Measurement deleted. Analysis recalculated.');}catch(error){notice(error.message,true);}};
 $('#print').onclick=()=>window.print();
 let baselinePrompted = false;
@@ -138,12 +137,38 @@ function responseCard(record,e) {
   const others=r.other_intervention_ids.map(id=>state.interventions.find(x=>x.id===id)).filter(Boolean);
   return `<div class="response-eye ${direction}"><h3>${eyeName(e)}</h3><div class="response-headline">${headline}</div><div class="scan-pair">${scan('Before',pre)}<span class="pair-arrow">→</span>${scan('After',post)}</div>${pre&&post ? `<p class="response-interval">${post.flight_day-pre.flight_day} days between scans · ${post.flight_day-record.end_day} days after session end</p>` : ''}${post ? `<span class="status-pill ${isExceeded(post)?'warn':post.delta_trt_um==null?'neutral':''}">${post.delta_trt_um==null?'No baseline comparison':isExceeded(post)?'Still above +19.4 μm':'At or below +19.4 μm'}</span>`:''}${others.length?`<p class="cointerventions">Also in this scan interval: ${others.map(x=>escapeHTML(cmName(x))).join(', ')}</p>`:''}</div>`;
 }
+// Static demo: countermeasures are entered into memory only. The pairing rule
+// mirrors interventions.comparisons() - latest scan strictly before the start
+// day, first scan strictly after the end day, same-day scans excluded.
+function pairInterventions(records){
+  const results = records.map(record => {
+    const entry = Object.assign({}, record, {responses:{}});
+    for(const eye of ['R','L']){
+      const rows = state.eyes[eye].results;
+      const before = rows.filter(r => r.flight_day < record.start_day);
+      const after  = rows.filter(r => r.flight_day > record.end_day);
+      let pre  = before.length ? before[before.length-1] : null;
+      let post = after.length ? after[0] : null;
+      if(record.status === 'Skipped'){ pre = post = null; }
+      const change = pre && post ? post.current_trt_um - pre.current_trt_um : null;
+      const others = records.filter(r => r.id !== record.id && r.status !== 'Skipped'
+        && pre && post && r.start_day < post.flight_day && r.end_day > pre.flight_day).map(r => r.id);
+      entry.responses[eye] = {before:pre, after:post, change_um:change, other_intervention_ids:others};
+    }
+    return entry;
+  });
+  results.sort((a,b) => b.start_day - a.start_day);
+  return results;
+}
+function setInterventions(records){
+  state.interventions = pairInterventions(records);
+}
+function newInterventionId(){ return 'local-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,7); }
 function renderCountermeasures() {
   const records=state.interventions || [];
-  for(const field of $('#cm-form').elements)field.disabled=demo;
   $('#export-linked').hidden=demo;
   $('#cm-overview-summary').textContent=records.length ? `${records.length} logged ${records.length===1?'session':'sessions'} · ${records.filter(r=>r.status!=='Skipped'&&Object.values(r.responses).some(x=>x.change_um!=null)).length} with paired OCT results` : 'Log a session. Your next OCT scan completes the before-and-after comparison.';
-  $('#cm-records').innerHTML=records.length ? records.map(r=>`<article class="card cm-record"><div class="cm-record-heading"><div><span class="section-kicker">FD ${r.start_day}${r.end_day!==r.start_day?'–'+r.end_day:''}</span><h2>${escapeHTML(cmName(r))}</h2></div><span class="status-pill ${r.status==='Stopped early'?'warn':r.status==='Skipped'?'neutral':''}">${escapeHTML(r.status)}</span></div><p class="cm-record-details">${r.duration_minutes!=null?`${r.duration_minutes} min · `:''}${escapeHTML(r.details || 'No parameters recorded')}</p>${r.notes?`<p class="cm-note">${escapeHTML(r.notes)}</p>`:''}<div class="response-grid">${responseCard(r,'R')}${responseCard(r,'L')}</div>${!demo?`<div class="cm-record-actions"><button class="text-button" data-cm-edit="${escapeHTML(r.id)}">Edit record</button><button class="text-button delete-button" data-cm-delete="${escapeHTML(r.id)}">Delete</button></div>`:''}</article>`).join('') : '<div class="card empty"><h2>Your first session starts the log.</h2><p>Record what you used and when.<br>Before-and-after TRT values appear here as scans become available.</p></div>';
+  $('#cm-records').innerHTML=records.length ? records.map(r=>`<article class="card cm-record"><div class="cm-record-heading"><div><span class="section-kicker">FD ${r.start_day}${r.end_day!==r.start_day?'–'+r.end_day:''}</span><h2>${escapeHTML(cmName(r))}</h2></div><span class="status-pill ${r.status==='Stopped early'?'warn':r.status==='Skipped'?'neutral':''}">${escapeHTML(r.status)}</span></div><p class="cm-record-details">${r.duration_minutes!=null?`${r.duration_minutes} min · `:''}${escapeHTML(r.details || 'No parameters recorded')}</p>${r.notes?`<p class="cm-note">${escapeHTML(r.notes)}</p>`:''}<div class="response-grid">${responseCard(r,'R')}${responseCard(r,'L')}</div>${true?`<div class="cm-record-actions"><button class="text-button" data-cm-edit="${escapeHTML(r.id)}">Edit record</button><button class="text-button delete-button" data-cm-delete="${escapeHTML(r.id)}">Delete</button></div>`:''}</article>`).join('') : '<div class="card empty"><h2>Your first session starts the log.</h2><p>Record what you used and when.<br>Before-and-after TRT values appear here as scans become available.</p></div>';
 }
 function configureCountermeasure() {
   const kind=$('#cm-kind').value, named=['Medication','Supplement','Other'].includes(kind);
@@ -155,21 +180,50 @@ function configureCountermeasure() {
 }
 $('#cm-kind').onchange=configureCountermeasure;
 $('#cm-form').onsubmit=async event=>{
-  event.preventDefault();if(demo)return;
+  event.preventDefault();
   const form=event.target,body=Object.fromEntries(new FormData(form)),button=form.querySelector('[type=submit]');
   if(body.end_day==='')body.end_day=body.start_day;
   if(['Medication','Supplement'].includes(body.kind))body.duration_minutes='';
   button.disabled=true;
-  try{state=await request('/api/intervention',body);form.reset();$('#cm-form-title').textContent='Record a countermeasure';$('#cm-cancel').hidden=true;configureCountermeasure();render();$('#cm-feedback').textContent='Saved. Scan comparisons updated.';}
+  try{
+    if(demo){
+      const record={id: body.id || newInterventionId(), kind:body.kind,
+        name: body.name || '', start_day:Number(body.start_day), end_day:Number(body.end_day),
+        duration_minutes: body.duration_minutes==='' || body.duration_minutes==null ? null : Number(body.duration_minutes),
+        details: body.details || '', status: body.status, notes: body.notes || ''};
+      const list=(state.interventions || []).filter(r => r.id !== record.id);
+      list.push(record);
+      setInterventions(list);
+      form.reset();$('#cm-form-title').textContent='Record a countermeasure';$('#cm-cancel').hidden=true;
+      configureCountermeasure();render();
+      $('#cm-feedback').textContent='Added to this session. Reloading clears it.';
+    } else {
+      state=await request('/api/intervention',body);
+      form.reset();$('#cm-form-title').textContent='Record a countermeasure';$('#cm-cancel').hidden=true;
+      configureCountermeasure();render();
+      $('#cm-feedback').textContent='Saved. Scan comparisons updated.';
+    }
+  }
   catch(error){$('#cm-feedback').textContent=error.message;notice(error.message,true);}
   finally{button.disabled=false;}
 };
 $('#cm-cancel').onclick=()=>{$('#cm-form').reset();$('#cm-cancel').hidden=true;$('#cm-form-title').textContent='Record a countermeasure';$('#cm-feedback').textContent='';configureCountermeasure();};
 $('#cm-records').onclick=async event=>{
   const edit=event.target.closest('[data-cm-edit]'),del=event.target.closest('[data-cm-delete]');
-  if(demo)return;
   if(edit){const r=state.interventions.find(x=>x.id===edit.dataset.cmEdit);if(!r)return;for(const key of ['id','kind','name','start_day','end_day','duration_minutes','details','status','notes'])$('#cm-form').elements[key].value=r[key]??'';configureCountermeasure();$('#cm-cancel').hidden=false;$('#cm-form-title').textContent='Edit countermeasure';$('#cm-feedback').textContent='';$('#cm-form').elements.kind.focus();$('#cm-form').scrollIntoView({behavior:'smooth',block:'start'});}
-  if(del&&confirm('Delete this countermeasure record?')){try{state=await request('/api/intervention-delete',{id:del.dataset.cmDelete});if($('#cm-form').elements.id.value===del.dataset.cmDelete)$('#cm-cancel').click();render();notice('Countermeasure deleted.');}catch(error){notice(error.message,true);}}
+  if(del&&confirm('Delete this countermeasure record?')){
+    try{
+      if(demo){
+        setInterventions((state.interventions || []).filter(r => r.id !== del.dataset.cmDelete));
+        if($('#cm-form').elements.id.value===del.dataset.cmDelete)$('#cm-cancel').click();
+        render();notice('Removed from this session.');
+      } else {
+        state=await request('/api/intervention-delete',{id:del.dataset.cmDelete});
+        if($('#cm-form').elements.id.value===del.dataset.cmDelete)$('#cm-cancel').click();
+        render();notice('Countermeasure deleted.');
+      }
+    }catch(error){notice(error.message,true);}
+  }
 };
 $('#baseline-open').onclick=openBaseline;
 $('#baseline-close').onclick=closeBaseline;
