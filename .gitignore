@@ -6,3 +6,6 @@ sans_data.json.*
 sans_data_report.*
 site/
 site-swap/
+
+# macOS
+.DS_Store
