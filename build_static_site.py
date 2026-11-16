@@ -10,6 +10,7 @@ Layout:
     site/eye/web/           SANS monitor, countermeasure guide and static data
     site/immune/web/        blood/immune monitor and existing demo bundle
     site/cardio/web/        heart and circulation monitor
+    site/bones/web/         bone density monitor
 
 SANS data is regenerated. The committed immune demo bundle is reused unless
 --refresh-immune is passed (requires the optional NASA CBC dataset).
@@ -73,6 +74,7 @@ def main() -> None:
         shutil.copy2(WEB / name, eye / name)
     shutil.copytree(ROOT / 'immune' / 'web', SITE / 'immune' / 'web')
     shutil.copytree(ROOT / 'cardio' / 'web', SITE / 'cardio' / 'web')
+    shutil.copytree(ROOT / 'bones' / 'web', SITE / 'bones' / 'web')
     (SITE / 'index.html').write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=anatomy/"><title>Mission health explorer</title><a href="anatomy/">Open anatomy explorer</a>', encoding='utf-8')
 
     # The Unity page and the monitor it opens.

@@ -188,7 +188,8 @@
       // Feature-relative paths work on Live Server, the Python server, and static hosts.
       var SOURCE = { immune: '../immune/web/index.html',
                      cardio: '../cardio/web/index.html',
-                     sans: '../eye/web/index.html' };
+                     bones:  '../bones/web/index.html',
+                     sans:   '../eye/web/index.html' };
       var current = null;
 
       function open(which){
@@ -228,7 +229,8 @@
       var TOPIC_IMMUNE = /Selected\s+Immune system/i;
       var TOPIC_EYES   = /Selected\s+Eyes\b/i;
       var TOPIC_HEART  = /Selected\s+Heart\b/i;
-      var TOPIC_OTHER  = /Selected\s+(Brain|Bones)\b/i;
+      var TOPIC_BONES  = /Selected\s+Bones\b/i;
+      var TOPIC_OTHER  = /Selected\s+Brain\b/i;
       var VIEW_RESET   = /View reset/i;
 
       (function hookConsole(){
@@ -241,6 +243,7 @@
             if(TOPIC_IMMUNE.test(msg)) open('immune');
             else if(TOPIC_EYES.test(msg)) open('sans');
             else if(TOPIC_HEART.test(msg)) open('cardio');
+            else if(TOPIC_BONES.test(msg)) open('bones');
             else if(TOPIC_OTHER.test(msg) || VIEW_RESET.test(msg)) close();
           } catch(e) {}
           return native.apply(console, arguments);
@@ -270,7 +273,7 @@
       try {
         var qs = new URLSearchParams(location.search);
         var want = qs.get('monitor');
-        if(want === 'sans' || want === 'immune' || want === 'cardio') open(want);
+        if(want === 'sans' || want === 'immune' || want === 'cardio' || want === 'bones') open(want);
         else if(qs.get('immune') === '1' || location.hash === '#immune') open('immune');
       } catch(e) {}
 
