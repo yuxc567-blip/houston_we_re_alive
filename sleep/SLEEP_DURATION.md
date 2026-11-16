@@ -19,3 +19,6 @@ Accumulated error is the shared trapezoidal integral of relative error over actu
 The existing shared status/urgency classes require warning, critical and rate thresholds. They are not applied because this script has no established sleep-specific thresholds. Results describe comparisons, not health classifications.
 
 Plotting needs Matplotlib (`python -m pip install matplotlib`); analysis, JSON and `--no-plot` use only the Python standard library. Run checks with `python -B -m unittest discover -s tests -v`.
+
+
+The combined browser dashboard adds a separate, user-approved **unvalidated prototype** review layer with fitted OLS trends and status/urgency rules. The raw analysis function described here remains descriptive. See [the model/evidence audit](EVIDENCE_AND_MODEL_AUDIT.md) for the distinction and source limits.

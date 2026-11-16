@@ -3,15 +3,19 @@ import argparse
 import copy
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import mimetypes
+import shutil
 from pathlib import Path
 import statistics
 import sys
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sleep.sleep_duration import analyze_sleep
+from sleep.monitoring import monitoring_summary
 from sleep.reactiontime import positive, process_reaction_times, save_results
 
+ROOT = Path(__file__).resolve().parents[1]
 WEB = Path(__file__).with_name("web")
 
 
@@ -36,6 +40,7 @@ def summary(data):
             raise ValueError("Reaction sessions require a baseline.")
         rows = data["reaction_sessions"]
         result["reaction_analysis"] = process_reaction_times([r["day"] for r in rows], [r["mean_ms"] for r in rows], data["reaction_baseline"]["mean_ms"])
+    result["monitoring"] = monitoring_summary(result["sleep_analysis"]["records"] if result["sleep_analysis"] else [], result["reaction_analysis"])
     return result
 
 
@@ -86,17 +91,38 @@ def make_handler(path):
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
-            self.wfile.write(body)
+            if self.command != "HEAD":
+                self.wfile.write(body)
 
         def do_GET(self):
             route = urlparse(self.path).path
             if route in ("/api/state", "/api/export"):
                 return self.send(200, summary(data))
-            files = {"/": ("index.html", "text/html"), "/index.html": ("index.html", "text/html"), "/app.js": ("app.js", "application/javascript"), "/style.css": ("style.css", "text/css")}
-            if route in files:
-                name, mime = files[route]
-                return self.send(200, (WEB / name).read_bytes(), mime + "; charset=utf-8")
+            mounts = {"/anatomy/": ROOT / "anatomy-explorer", "/anatomy-explorer/": ROOT / "anatomy-explorer",
+                      "/sleep/web/": WEB, "/sleep/": WEB,
+                      **{f"/{feature}/web/": ROOT / feature / "web" for feature in ("eye", "immune", "cardio")}}
+            base, name = WEB, {"/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/style.css": "style.css"}.get(route)
+            for prefix, directory in mounts.items():
+                if route.startswith(prefix):
+                    base, name = directory, unquote(route[len(prefix):]) or "index.html"
+                    break
+            if name is not None:
+                file = (base / name).resolve()
+                if file.is_relative_to(base.resolve()) and file.is_file() and file.suffix.lower() in {".html", ".js", ".css", ".json", ".png", ".jpg", ".svg", ".ico", ".wasm", ".data", ".woff", ".woff2"}:
+                    mime = {".wasm": "application/wasm", ".data": "application/octet-stream", ".js": "application/javascript"}.get(file.suffix.lower()) or mimetypes.guess_type(file.name)[0] or "application/octet-stream"
+                    self.send_response(200)
+                    self.send_header("Content-Type", mime)
+                    self.send_header("Content-Length", str(file.stat().st_size))
+                    self.send_header("X-Content-Type-Options", "nosniff")
+                    self.end_headers()
+                    if self.command != "HEAD":
+                        with file.open("rb") as stream:
+                            shutil.copyfileobj(stream, self.wfile)
+                    return
             self.send(404, {"error": "Not found."})
+
+        def do_HEAD(self):
+            self.do_GET()
 
         def do_POST(self):
             nonlocal data

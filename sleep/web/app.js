@@ -11,12 +11,15 @@ async function request(path, body){
   if(!response.ok)throw new Error(result.error||'The request could not be completed.');
   return result;
 }
-function drawChart(element, records, xKey, yKey, reference, unit){
+function drawChart(element, records, xKey, yKey, reference, unit, trend=null){
   if(!records.length){element.classList.add('empty');element.textContent='Your next observation starts the chart.';return;}
   element.classList.remove('empty');
   const W=560,H=170,L=42,R=20,T=18,B=30;
   const xs=records.map(r=>r[xKey]),ys=records.map(r=>r[yKey]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs),values=[...ys,reference];
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const fitted=trend?.status==='fitted';
+  const fitValue=d=>{const error=trend.mean_y+trend.slope*(d-trend.mean_x);return unit==='h'?reference*(1-error):reference*(1+error);};
+  const values=[...ys,reference,...(fitted?[fitValue(minX),fitValue(maxX)]:[])];
   const lo=Math.min(...values),hi=Math.max(...values),padding=Math.max((hi-lo)*.2,unit==='h'?.5:10),minY=lo-padding,maxY=hi+padding;
   const x=v=>L+(maxX===minX?(W-L-R)/2:(v-minX)/(maxX-minX)*(W-L-R));
   const y=v=>T+(maxY-v)/(maxY-minY)*(H-T-B);
@@ -26,16 +29,43 @@ function drawChart(element, records, xKey, yKey, reference, unit){
   for(const r of records)svg+=`<circle cx="${x(r[xKey])}" cy="${y(r[yKey])}" r="3.5" fill="#136a5c"><title>Day ${r[xKey]}: ${fmt(r[yKey])} ${unit}</title></circle>`;
   const labels=xs.length<=10?xs:[minX,maxX];
   for(const d of labels)svg+=`<text x="${x(d)}" y="${H-7}" text-anchor="middle" fill="#687e70" font-size="10">FD ${d}</text>`;
+  if(fitted)svg+=`<line x1="${x(minX)}" y1="${y(fitValue(minX))}" x2="${x(maxX)}" y2="${y(fitValue(maxX))}" stroke="#b27b3e" stroke-width="2" stroke-dasharray="5 4"><title>OLS fitted trend over observed days</title></line><text x="${L}" y="10" fill="#8b693d" font-size="9">Dashed ochre line: exploratory OLS trend</text>`;
   element.innerHTML=svg+'</svg>';
 }
+const htmlText=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function assessmentMarkup(title,item,evidence){
+  const available=item.status!=='NOT ASSESSED',trend=item.trend;
+  const tone=item.status==='ACTION NEEDED'?'action':item.status==='WATCH OUT'?'watch':available?'':'unknown';
+  const urgencyTone=item.urgency==='HIGH'?'action':item.urgency==='MEDIUM'?'watch':available?'':'unknown';
+  const n=trend.n;
+  let markup=`<h3>${htmlText(title)}</h3><div class="assessment-state"><span class="review-pill ${tone}">Status: ${htmlText(item.status)}</span><span class="review-pill ${urgencyTone}">Prototype urgency: ${htmlText(item.urgency)}</span></div>`;
+  if(!available)return markup+`<p>${htmlText(item.reason)}</p><p>Missing observations are never classified as normal.</p>`;
+  markup+=`<dl><dt>Signed current error</dt><dd>${fmt(item.current_error*100,2,true)}%</dd><dt>Latest derivative</dt><dd>${fmt(item.latest_derivative_per_day==null?null:item.latest_derivative_per_day*100,2,true)} pp/day</dd><dt>Signed integral</dt><dd>${fmt(item.signed_integral_fraction_days,3,true)} fraction-days</dd><dt>OLS fitted slope · n=${n}</dt><dd>${fmt(trend.slope==null?null:trend.slope*100,2,true)} pp/day</dd><dt>OLS R² · in-sample fit</dt><dd>${fmt(trend.r_squared,3)}</dd><dt>7-day linear extrapolation</dt><dd>${fmt(trend.forecast_error==null?null:trend.forecast_error*100,2,true)}%</dd></dl>`;
+  markup+=`<p>${htmlText(item.recommendation)}</p><details><summary>Why this prototype label?</summary><ul>${item.reasons.map(reason=>`<li>${htmlText(reason)}</li>`).join('')}</ul></details>`;
+  const options=item.recommendation_ids.map(id=>evidence.find(source=>source.id===id)).filter(Boolean);
+  markup+=`<p class="field-note">Research-informed review options: ${options.map(source=>`<a href="#evidence-${htmlText(source.id)}" data-evidence-link>${htmlText(source.title)}</a>`).join(' · ')}.</p>`;
+  return markup;
+}
+function renderMonitoring(){
+  const monitoring=state.monitoring;
+  if(!monitoring){$('#sleep-assessment').textContent='Restart the local Python server to load the new trend analysis.';return;}
+  $('#sleep-assessment').innerHTML=assessmentMarkup('Sleep',monitoring.sleep,monitoring.evidence);
+  $('#reaction-assessment').innerHTML=assessmentMarkup('Reaction time',monitoring.reaction,monitoring.evidence);
+  $('#reference-context').textContent=monitoring.reference_context;
+  const fit=monitoring.association;
+  $('#association-summary').textContent=fit.status==='fitted'?`Exploratory OLS, n=${fit.n} paired mission days: reaction error = ${fmt(Math.abs(fit.intercept)<0.0005?0:fit.intercept,3)} ${fit.slope<0?'−':'+'} ${fmt(Math.abs(fit.slope),3)} × sleep error (fractions). R²=${fmt(fit.r_squared,3)}. This fit is not used to assign urgency.`:`Association unavailable: ${fit.n} paired mission days. At least three pairs and variation in sleep deviation are needed.`;
+  $('#evidence-options').innerHTML=monitoring.evidence.map(source=>`<article id="evidence-${htmlText(source.id)}"><h3>${htmlText(source.title)}</h3><p>${htmlText(source.guidance)}</p><p class="field-note">${htmlText(source.basis)} <a href="${htmlText(source.url)}" target="_blank" rel="noopener">Read the original report ↗</a></p></article>`).join('');
+  for(const link of document.querySelectorAll('[data-evidence-link]'))link.addEventListener('click',()=>{$('#prevention').open=true;});
+}
+
 function render(){
   $('#sleep-form button[type=submit]').disabled=savingSleep;
   $('#export').disabled=false;
   const data=state.data,sleep=state.sleep_analysis?.records||[],reaction=state.reaction_analysis;
   const latest=sleep.at(-1),last=reaction.at(-1),baseline=data.reaction_baseline;
   $('#reference-latest').innerHTML=`${fmt(data.baseline_hours,1)} <small>h</small>`;
-  $('#sleep-latest').innerHTML=latest?`${fmt(latest.sleep_hours)} <small>h</small>`:'—';
-  $('#sleep-context').textContent=latest?`FD ${latest.mission_day} · ${fmt(latest.deviation_hours,1,true)} h from reference`:'Add your first observation';
+  $('#sleep-latest').innerHTML=latest?`${fmt(latest.sleep_hours,2)} <small>h</small>`:'—';
+  $('#sleep-context').textContent=latest?`FD ${latest.mission_day} · ${fmt(latest.deviation_hours,2,true)} h from reference`:'Add your first observation';
   $('#reaction-latest').innerHTML=last?`${fmt(last.reaction_time_ms,0)} <small>ms</small>`:'—';
   $('#reaction-context').textContent=last?`FD ${last.mission_day} · ${fmt(last.deviation_percent,1,true)}% from baseline`:baseline?'Baseline ready. Take your first daily test.':'Measure a personal baseline first';
   $('#sleep-reference').value=data.baseline_hours;
@@ -46,10 +76,11 @@ function render(){
   $('#baseline-start').disabled=!!baseline||trial.mode!==null;
   $('#session-start').disabled=!baseline||trial.mode!==null;
   $('#reaction-day').disabled=trial.mode!==null;
-  $('#sleep-rows').innerHTML=sleep.length?sleep.map(r=>`<tr><td>FD ${r.mission_day}</td><td>${fmt(r.sleep_hours)}</td><td>${fmt(r.deviation_hours,1,true)}</td><td>${fmt(r.deviation_percent,2,true)}</td><td>${fmt(r.error_rate_per_day==null?null:r.error_rate_per_day*100,2,true)}</td><td>${fmt(r.accumulated_relative_error_days,3,true)}</td></tr>`).join(''):'<tr><td colspan="6">No observations yet. Add your first sleep entry above.</td></tr>';
+  $('#sleep-rows').innerHTML=sleep.length?sleep.map(r=>`<tr><td>FD ${r.mission_day}</td><td>${fmt(r.sleep_hours,2)}</td><td>${fmt(r.deviation_hours,2,true)}</td><td>${fmt(r.deviation_percent,2,true)}</td><td>${fmt(r.error_rate_per_day==null?null:r.error_rate_per_day*100,2,true)}</td><td>${fmt(r.accumulated_relative_error_days,3,true)}</td></tr>`).join(''):'<tr><td colspan="6">No observations yet. Add your first sleep entry above.</td></tr>';
   $('#reaction-rows').innerHTML=reaction.length?reaction.map((r,i)=>`<tr><td>FD ${r.mission_day}</td><td>${fmt(r.reaction_time_ms)}</td><td>${fmt(r.deviation,1,true)}</td><td>${fmt(r.deviation_percent,2,true)}</td><td>${fmt(r.error_rate==null?null:r.error_rate*100,2,true)}</td><td>${fmt(r.accumulated_error,3,true)}</td><td>${data.reaction_sessions[i].early_clicks} / ${data.reaction_sessions[i].timeouts}</td></tr>`).join(''):'<tr><td colspan="7">No daily tests yet. Measure a baseline, then test a mission day.</td></tr>';
-  drawChart($('#sleep-chart'),sleep,'mission_day','sleep_hours',data.baseline_hours,'h');
-  drawChart($('#reaction-chart'),reaction,'mission_day','reaction_time_ms',baseline?.mean_ms||0,'ms');
+  renderMonitoring();
+  drawChart($('#sleep-chart'),sleep,'mission_day','sleep_hours',data.baseline_hours,'h',state.monitoring?.sleep.trend);
+  drawChart($('#reaction-chart'),reaction,'mission_day','reaction_time_ms',baseline?.mean_ms||0,'ms',state.monitoring?.reaction.trend);
 }
 $('#sleep-form').addEventListener('submit',async event=>{
   event.preventDefault();if(!state)return;
@@ -141,4 +172,12 @@ $('#export').onclick=async()=>{
 request('/api/state').then(result=>{state=result;render();}).catch(error=>{
   notice('Cannot connect to the local Python server. Run python sleep/dashboard.py and open http://127.0.0.1:8010. '+error.message,true);
   for(const button of document.querySelectorAll('button'))button.disabled=true;
+});
+
+// The parent anatomy dialog can hide an iframe without a visibilitychange event.
+window.addEventListener('message',event=>{
+  if(event.source===window.parent && event.origin===location.origin && event.data?.type==='orbitcare' && event.data.action==='closed')cancelTest('Test cancelled because the brain window was closed. Partial trials were not saved.');
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && window.parent!==window){cancelTest();window.parent.postMessage({type:'orbitcare',action:'close'},location.origin);}
 });

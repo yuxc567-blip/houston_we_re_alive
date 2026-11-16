@@ -75,7 +75,9 @@ public class AnatomyExplorer : MonoBehaviour
         Selected = id;
         var topic = AnatomyTopics.All[id];
         heading.text = topic.Title; explanation.text = topic.Summary; detail.text = topic.Details;
-        if (explanationOverlay != null) explanationOverlay.SetActive(true);
+        // Topics with a live monitor show that instead of the built-in window.
+        if (explanationOverlay != null && id != AnatomyTopics.ImmuneSystem)
+            explanationOverlay.SetActive(true);
         help.SetActive(false);
         dragging = false;
         if (!visited[id]) { visited[id] = true; VisitedCount++; }
@@ -85,6 +87,9 @@ public class AnatomyExplorer : MonoBehaviour
             topicButtons[i].GetComponentInChildren<TMP_Text>().color = i == id ? Palette.Background : Palette.Text;
         }
         if (!Muted) sound.PlayOneShot(click);
+        // The immune system is the one topic with a live monitor behind it.
+        if (id == AnatomyTopics.ImmuneSystem) WebBridge.OpenMonitor();
+        else WebBridge.CloseMonitor();
         Debug.Log("[AnatomyExplorer] Selected " + Titles[id] + "; explanation displayed; visited=" + VisitedCount);
     }
 
@@ -93,7 +98,7 @@ public class AnatomyExplorer : MonoBehaviour
         targetYaw = targetPitch = 0; zoom = 7.2f;
         Debug.Log("[AnatomyExplorer] View reset.");
     }
-    public void CloseExplanation() { if (explanationOverlay != null) explanationOverlay.SetActive(false); dragging = false; }
+    public void CloseExplanation() { if (explanationOverlay != null) explanationOverlay.SetActive(false); dragging = false; WebBridge.CloseMonitor(); }
     public void ToggleHelp(bool show) { if (show) CloseExplanation(); help.SetActive(show); dragging = false; }
     public void ToggleSound() { Muted = !Muted; PlayerPrefs.SetInt("AnatomyMuted", Muted ? 1 : 0); PlayerPrefs.Save(); UpdateSoundLabel(); }
     void UpdateSoundLabel() { soundButton.GetComponentInChildren<TMP_Text>().text = Muted ? "Sound: off" : "Sound: on"; }

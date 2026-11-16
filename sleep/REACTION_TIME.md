@@ -21,3 +21,6 @@ python sleep/reactiontime.py --data sleep/my_other_test.json
 ```
 
 The test uses Python's installed Tkinter and no external assets, server or network calls. No packages need downloading on this computer. It does not update Unity or the website. Do not commit personal test JSON files; share only source code.
+
+
+The combined browser dashboard adds a separate, user-approved **unvalidated prototype** review layer with fitted OLS trends and status/urgency rules. The raw analysis function described here remains descriptive. See [the model/evidence audit](EVIDENCE_AND_MODEL_AUDIT.md) for the distinction and source limits.
