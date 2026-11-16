@@ -100,7 +100,7 @@ def make_handler(path):
                 return self.send(200, summary(data))
             mounts = {"/anatomy/": ROOT / "anatomy-explorer", "/anatomy-explorer/": ROOT / "anatomy-explorer",
                       "/sleep/web/": WEB, "/sleep/": WEB,
-                      **{f"/{feature}/web/": ROOT / feature / "web" for feature in ("eye", "immune", "cardio")}}
+                      **{f"/{feature}/web/": ROOT / feature / "web" for feature in ("eye", "immune", "cardio", "bones")}}
             base, name = WEB, {"/": "index.html", "/index.html": "index.html", "/app.js": "app.js", "/style.css": "style.css"}.get(route)
             for prefix, directory in mounts.items():
                 if route.startswith(prefix):

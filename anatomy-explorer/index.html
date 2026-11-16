@@ -151,20 +151,112 @@
       document.body.appendChild(script);
 
     </script>
-  
+
   <!-- Blood & immune monitor overlay -->
   <style>
-    #oc-overlay{position:fixed;inset:0;z-index:30;display:none;background:rgba(3,10,16,.72);
-      backdrop-filter:blur(3px)}
-    #oc-overlay.on{display:block}
-    #oc-panel{position:absolute;inset:2.5vh 2.5vw;background:#06121b;border:1px solid #213a4b;
-      display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.6)}
-    #oc-panel iframe{width:100%;flex:1;min-height:0;border:0;display:block;background:#06121b}
-    #oc-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;color:#e8f2f8;font:500 14px system-ui,sans-serif}
-    #oc-close{font:500 12px/1 system-ui,sans-serif;
-      color:#b8cad7;background:#0c2331;border:1px solid #213a4b;border-radius:8px;
-      padding:7px 12px;cursor:pointer}
-  </style>
+    /* Visual overrides only: the markup and the loader are untouched. */
+    :root{
+      --bg:#06121b; --line:#1b3242; --line2:#27455a;
+      --ink:#e9f2f8; --ink2:#b8cad7; --muted:#7d93a3; --mint:#6fe0c0;
+      color-scheme:dark;
+    }
+    html,body{
+      background:
+        radial-gradient(1100px 560px at 76% -14%,#17405a 0%,transparent 62%),
+        radial-gradient(700px 420px at 6% 108%,#12303f 0%,transparent 60%),
+        var(--bg) !important;
+    }
+    #unity-canvas{background:transparent !important}
+
+    /* footer: white bar and Unity-blue type do not survive a dark stage */
+    #unity-footer{
+      background:linear-gradient(180deg,#081a25,#061620) !important;
+      border-top:1px solid var(--line);
+      height:38px;
+    }
+    #unity-logo-title-footer{
+      filter:grayscale(1) brightness(2.6) opacity(.32);
+      transform:scale(.86); transform-origin:left center;
+    }
+    #unity-build-title{
+      float:right; margin-right:12px; line-height:38px;
+      font:600 11px/38px -apple-system,"Segoe UI",system-ui,sans-serif !important;
+      letter-spacing:.14em; text-transform:uppercase; color:var(--muted) !important;
+    }
+    #unity-fullscreen-button{
+      filter:invert(1) brightness(1.7) opacity(.5);
+      transition:opacity .15s;
+    }
+    #unity-fullscreen-button:hover{opacity:.9}
+
+    /* loading: recolour the Unity sprites to the product palette */
+    #unity-loading-container{background:rgba(6,18,27,.92) !important}
+    #unity-logo{
+      background-image:none !important;
+      width:150px; height:2px; border-radius:99px;
+      background:linear-gradient(90deg,transparent,var(--line2),transparent);
+      margin-bottom:18px;
+    }
+    #unity-progress-bar-empty{
+      background-image:none !important; background:#12303f !important;
+      width:220px !important; height:5px !important; border-radius:99px;
+      overflow:hidden; margin:0 !important;
+    }
+    #unity-progress-bar-full{
+      background-image:none !important;
+      background:linear-gradient(90deg,var(--mint),#7fb8ff) !important;
+      height:5px !important; border-radius:99px; margin:0 !important;
+      transition:width .2s ease;
+    }
+
+    /* transient Unity messages */
+    #unity-warning{
+      background:transparent !important; padding:0 !important;
+      color:var(--ink); font:500 12px/1.5 -apple-system,system-ui,sans-serif;
+      width:min(560px,86vw) !important;
+    }
+    #unity-warning > div{border-radius:9px !important; border:1px solid var(--line2)}
+
+    /* monitor overlay */
+    #oc-overlay{
+      position:fixed; inset:0; z-index:30; display:none;
+      background:rgba(3,10,16,.78); backdrop-filter:blur(4px);
+      opacity:0; transition:opacity .18s ease;
+    }
+    #oc-overlay.on{display:block; opacity:1}
+    #oc-panel{
+      position:absolute; inset:2.2vh 2.4vw; background:var(--bg);
+      border:1px solid var(--line2); border-radius:16px; overflow:hidden;
+      box-shadow:0 30px 90px rgba(0,0,0,.7);
+      transform:translateY(6px); transition:transform .18s ease;
+    }
+    #oc-overlay.on #oc-panel{transform:translateY(0)}
+    #oc-panel iframe{
+      width:100%; height:100%; border:0; display:block; background:var(--bg);
+    }
+    #oc-close{
+      position:absolute; top:10px; right:14px; z-index:2;
+      font:500 12px/1 inherit; color:var(--ink2);
+      background:rgba(14,41,55,.92); border:1px solid var(--line2);
+      border-radius:8px; padding:7px 12px; cursor:pointer;
+      backdrop-filter:blur(6px); transition:color .15s,border-color .15s;
+    }
+    #oc-close:hover{color:var(--ink); border-color:var(--mint)}
+    #oc-close:focus-visible{outline:2px solid var(--mint); outline-offset:2px}
+
+    @media (max-width:760px){
+      #oc-panel{inset:0; border-radius:0; border:0}
+    }
+    @media (prefers-reduced-motion:reduce){
+      #oc-overlay,#oc-panel,#unity-progress-bar-full{transition:none}
+    }
+
+    /* Keep the accessible dialog header and a full-height embedded monitor. */
+    #oc-panel{display:flex;flex-direction:column}
+    #oc-header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;color:var(--ink);font:500 14px system-ui,sans-serif;flex-shrink:0}
+    #oc-panel iframe{flex:1;min-height:0;height:auto}
+    #oc-close{position:static;font:500 12px/1 system-ui,sans-serif}
+</style>
   <div id="oc-overlay" aria-hidden="true">
     <div id="oc-panel" role="dialog" aria-modal="true" aria-labelledby="oc-title">
       <div id="oc-header"><span id="oc-title">Health monitor</span><button id="oc-close" type="button">Close &#10005;</button></div>
@@ -190,14 +282,14 @@
 
       // Two monitors live behind the anatomy model:
       // Feature-relative paths work on Live Server, the Python server, and static hosts.
-      var SOURCE = { brain: '../sleep/web/index.html', immune: '../immune/web/index.html',
+      var SOURCE = { brain: '../sleep/web/index.html', bones: '../bones/web/index.html', immune: '../immune/web/index.html',
                      cardio: '../cardio/web/index.html',
                      sans: '../eye/web/index.html' };
       var current = null;
 
       function open(which){
         var src = SOURCE[which] || SOURCE.immune;
-        frame.title = ({brain:'Brain — Sleep and reaction', sans:'Eyes — SANS monitor', cardio:'Heart monitor', immune:'Immune system monitor'})[which] || 'Health monitor';
+        frame.title = ({brain:'Brain — Sleep and reaction', sans:'Eyes — SANS monitor', cardio:'Heart monitor', bones:'Bone density monitor', immune:'Immune system monitor'})[which] || 'Health monitor';
         document.getElementById('oc-title').textContent = frame.title;
         if(src !== current){ frame.src = src; current = src; }
         overlay.classList.add('on');
@@ -236,7 +328,7 @@
       var TOPIC_EYES   = /Selected\s+Eyes\b/i;
       var TOPIC_HEART  = /Selected\s+Heart\b/i;
       var TOPIC_BRAIN  = /Selected\s+Brain\b/i;
-      var TOPIC_OTHER  = /Selected\s+Bones\b/i;
+      var TOPIC_BONES  = /Selected\s+Bones\b/i;
       var VIEW_RESET   = /View reset/i;
 
       (function hookConsole(){
@@ -250,7 +342,8 @@
             else if(TOPIC_EYES.test(msg)) open('sans');
             else if(TOPIC_HEART.test(msg)) open('cardio');
             else if(TOPIC_BRAIN.test(msg)) open('brain');
-            else if(TOPIC_OTHER.test(msg) || VIEW_RESET.test(msg)) close();
+            else if(TOPIC_BONES.test(msg)) open('bones');
+            else if(VIEW_RESET.test(msg)) close();
           } catch(e) {}
           return native.apply(console, arguments);
         };
@@ -280,7 +373,7 @@
       try {
         var qs = new URLSearchParams(location.search);
         var want = qs.get('monitor');
-        if(want === 'brain' || want === 'sans' || want === 'immune' || want === 'cardio') open(want);
+        if(want === 'bones' || want === 'brain' || want === 'sans' || want === 'immune' || want === 'cardio') open(want);
         else if(qs.get('immune') === '1' || location.hash === '#immune') open('immune');
       } catch(e) {}
 

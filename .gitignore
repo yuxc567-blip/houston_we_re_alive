@@ -4,3 +4,12 @@ sleep/*results.json
 sleep/*results.json.tmp
 sleep/my_other_test.json
 sleep/my_other_test.json.tmp
+sans_data.json
+sans_data.json.bak
+sans_data.json.*
+sans_data_report.*
+site/
+site-swap/
+
+# macOS
+.DS_Store
