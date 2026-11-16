@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heart &amp; circulation monitor — OrbitCare</title>
+<style>
+  :root{
+    --bg:#06121b;--line:#213a4b;--ink:#e9f2f8;--ink2:#b8cad7;--muted:#7d93a3;
+    --mint:#6fe0c0;--blue:#7fb8ff;--amber:#f2c56f;--red:#ff8e8e;--violet:#b39dff;
+    color-scheme:dark;
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);line-height:1.65;
+    background:radial-gradient(800px 400px at 85% -10%,#17405a,transparent 60%),var(--bg);
+    background-attachment:fixed}
+  .wrap{max-width:820px;margin:0 auto;padding:30px 24px 70px}
+
+  header{display:flex;justify-content:space-between;align-items:center;gap:16px;
+    flex-wrap:wrap;margin-bottom:20px}
+  h1{margin:0;font-size:16px;font-weight:650;letter-spacing:.02em}
+  .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  select{background:#0d2230;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:9px 12px;font-size:13px;max-width:340px}
+
+  .stepper{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .step{background:#0d2431;border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:7px 13px;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .step:disabled{opacity:.35;cursor:default}
+  .step.primary{background:var(--mint);border-color:var(--mint);color:#062018;font-weight:600}
+  .counter{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .hint{font-size:11px;color:var(--muted)}
+
+  .baseline{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:16px}
+  .baseline i{display:block;width:6px;height:16px;border-radius:2px;background:#162c3a;cursor:pointer}
+  .baseline i.pre{background:#1d4152}
+  .baseline i.abn{background:var(--amber)}
+  .baseline i.bad{background:var(--red)}
+  .baseline i.on{outline:2px solid var(--mint);outline-offset:1px}
+  .baseline .lab{font-size:10.5px;color:var(--muted);margin-left:8px;align-self:center}
+
+  .verdict{border:1px solid var(--line);border-left-width:3px;border-radius:12px;
+    padding:16px 18px;margin-bottom:16px;background:#0a1e2b}
+  .level{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .headline{font-size:17px;font-weight:600;margin-top:8px}
+  .why{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  .tag{font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid currentColor;margin-left:6px}
+  .t-real{color:var(--mint)}.t-syn{color:var(--blue)}
+
+  .rows{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden}
+  .row{display:grid;grid-template-columns:96px 1fr;gap:12px;padding:11px 14px;background:#0a1d29}
+  .row .k{font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;
+    padding-top:2px}
+  .row .v{font-size:12.5px;color:var(--ink2)}
+  .row .v b{color:var(--ink);font-weight:600}
+  .big{font-size:15px;color:var(--ink);font-weight:600}
+  .yes{color:var(--mint)}
+  .no{color:#f3d9a6}
+
+  details{margin-top:18px;border-top:1px solid var(--line);padding-top:13px}
+  summary{cursor:pointer;font-size:12.5px;color:var(--ink2);list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ "}
+  details[open] summary::before{content:"▾ "}
+  .tbl{width:100%;border-collapse:collapse;margin-top:11px;font-size:12.5px}
+  .tbl th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;
+    letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:6px 8px;border-bottom:1px solid #172c3a;color:var(--ink2);
+    font-variant-numeric:tabular-nums}
+  .tbl td:first-child{color:var(--ink)}
+  tbody#tblBody tr{cursor:pointer}
+  tbody#tblBody tr:hover td{background:#0e2634}
+  tbody#tblBody tr.on td{background:#12303c}
+
+  .marker{margin-top:18px;border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;background:#0a1e2b}
+  .marker[hidden]{display:none}
+  .marker .eyebrow{font-size:10px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .marker h3{margin:6px 0 3px;font-size:16px}
+  .marker .meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .marker svg{width:100%;height:150px;display:block}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:10.5px;color:var(--muted)}
+  .legend i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .sw-line{height:0;border-top:2px solid var(--mint);width:14px}
+  .sw-dash{height:0;border-top:1px dashed #f2c56f;width:14px}
+  .sw-dot{width:7px;height:7px;border-radius:50%;background:var(--mint)}
+
+  pre{white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;
+    color:var(--ink2);background:#081823;border:1px solid var(--line);
+    border-radius:10px;padding:12px;margin-top:10px;max-height:320px;overflow:auto}
+  .foot{margin-top:24px;font-size:11.5px;color:#62798a;line-height:1.7}
+</style>
+</head>
+<body>
+<div style="position:fixed;top:14px;right:18px;z-index:9">
+  <button onclick="parent.postMessage('close-immune','*')"
+     style="color:#7d93a3;font-size:12px;background:none;cursor:pointer;
+     border:1px solid #213a4b;border-radius:8px;padding:5px 11px;font-family:inherit">
+     Close ✕</button>
+</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Heart &amp; circulation monitor</h1>
+      <div class="sub">Your reading against a modelled expected value · heart rate, systolic and diastolic pressure
+      <br><span style="color:#7d93a3">Daily checks; the published reference only covers flight days 6–159</span></div>
+    </div>
+    <select id="caseSel"></select>
+  </header>
+
+  <div class="stepper">
+    <button class="step" id="first">⏮</button>
+    <button class="step" id="prev">← Previous</button>
+    <span class="counter" id="counter">—</span>
+    <button class="step primary" id="next">Next →</button>
+    <button class="step" id="last">⏭</button>
+    <span class="hint">Keyboard ← → also works</span>
+  </div>
+
+  <div class="baseline" id="baselineBar"></div>
+
+  <div class="verdict" id="verdict">
+    <div class="level"><span class="dot" id="dot"></span><span id="levelTxt">—</span><span id="srcTag"></span></div>
+    <div class="headline" id="headline">—</div>
+    <p class="why" id="why"></p>
+  </div>
+
+  <div class="rows" id="rows"></div>
+
+  <details open>
+    <summary>All three indicators on this day</summary>
+    <table class="tbl">
+      <thead><tr><th>Indicator</th><th>Reading</th><th>Baseline</th><th>Modelled</th>
+        <th>vs baseline</th><th>vs model</th><th>Status</th></tr></thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </details>
+
+  <div class="marker" id="markerCard" hidden>
+    <div class="eyebrow">Single indicator · trajectory</div>
+    <h3 id="mTitle">—</h3>
+    <div class="meta" id="mMeta"></div>
+    <svg id="mSpark" viewBox="0 0 720 150" preserveAspectRatio="none"></svg>
+    <div class="legend">
+      <span><i class="sw-line"></i> Your reading</span>
+      <span><i class="sw-dash"></i> Modelled expected value</span>
+      <span><i class="sw-dot"></i> Each check</span>
+    </div>
+  </div>
+
+  <details>
+    <summary>Full guidance text</summary>
+    <pre id="pkg">—</pre>
+  </details>
+
+  <div class="foot">
+    <b>How this differs from the blood monitor.</b> The blood panel compares you with your own pre-flight
+    baseline. This one compares you with a <b>modelled expected value</b>: the published group trajectory
+    scaled to your baseline. Your personal change and the group change are shown side by side.<br>
+    Reference: Balali et al. (2025), 17 ISS cosmonauts, <a href="https://doi.org/10.1038/s41526-025-00522-8"
+    style="color:#7fb8ff">doi:10.1038/s41526-025-00522-8</a>. The tolerance values are fictional and no
+    individual clinical range is established.<br>
+    Not a medical device. Readouts support a review conversation and never diagnose.
+  </div>
+</div>
+
+<script src="cardio-data.js"></script>
+<script>
+const D = window.CARDIO_DATA;
+const state = { ci: 0, si: 0, mi: null };
+
+const ACTIONS = {
+  CONTINUE_SCHEDULED_MONITORING: ['Continue scheduled monitoring', 'var(--mint)'],
+  REPEAT_AND_CHECK_CONTEXT:      ['Repeat and check context', 'var(--blue)'],
+  REPEAT_MEASUREMENT:            ['Repeat the measurement', 'var(--violet)'],
+  MEDICAL_REVIEW:                ['Medical review needed', 'var(--amber)'],
+  URGENT_ASSESSMENT:             ['Urgent assessment now', 'var(--red)'],
+};
+const STATUS_COLOR = { NORMAL: 'var(--mint)', WATCH: 'var(--blue)',
+                       ACTION_REVIEW: 'var(--amber)', URGENT: 'var(--red)' };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const caseOf = () => D.cases[state.ci];
+
+function render() {
+  const c = caseOf();
+  const i = Math.max(0, Math.min(state.si, c.samples.length - 1));
+  state.si = i;
+  const s = c.samples[i];
+  const [txt, color] = ACTIONS[s.action] || [s.action, 'var(--muted)'];
+
+  $('counter').innerHTML = `Flight day <b>${s.day}</b> · ${s.timestamp}`
+    + `　<span style="color:#5d7488">check ${i + 1}/${c.samples.length} · daily</span>`;
+  $('first').disabled = $('prev').disabled = i === 0;
+  $('last').disabled = $('next').disabled = i === c.samples.length - 1;
+
+  $('verdict').style.borderColor = color;
+  $('dot').style.background = color;
+  $('levelTxt').textContent = txt;
+  $('srcTag').innerHTML = `<span class="tag t-syn">${esc(c.source)}</span>`
+    + `<span class="tag t-syn" style="margin-left:6px">${esc(c.cadence_label)}</span>`;
+
+  const flagged = s.rows.filter(r => r.status !== 'NORMAL')
+    .sort((a, b) => Math.abs(b.difference_pp) - Math.abs(a.difference_pp));
+  const lead = s.rows.find(r => r.indicator === s.lead) || s.rows[0];
+
+  $('headline').textContent = s.action === 'CONTINUE_SCHEDULED_MONITORING'
+    ? 'Everything tracks the model today'
+    : `${lead.label} ${lead.direction === 'higher' ? 'above' : 'below'} the model`;
+  $('headline').style.color = s.action === 'CONTINUE_SCHEDULED_MONITORING' ? 'var(--ink)' : color;
+  $('why').textContent = flagged.length
+    ? 'Off the model: ' + flagged.map(r =>
+        `${r.label} ${r.difference_pp > 0 ? '+' : ''}${r.difference_pp} pp`).join(', ')
+    : 'All three indicators sit inside the comparison tolerance';
+
+  $('baselineBar').innerHTML = c.samples.map((x, k) => {
+    const cls = ['i',
+      x.action === 'CONTINUE_SCHEDULED_MONITORING' ? '' : 'abn',
+      x.action === 'URGENT_ASSESSMENT' ? 'bad' : '',
+      k === i ? 'on' : ''].filter(Boolean).join(' ');
+    return `<i class="${cls}" data-k="${k}" title="Day ${x.day}: ${x.action}"></i>`;
+  }).join('') + `<span class="lab">${c.samples.length} daily checks</span>`;
+
+  // rows
+  const rows = [];
+  if (s.action === 'CONTINUE_SCHEDULED_MONITORING') {
+    rows.push(['Headline', 'Nothing crosses the comparison tolerance today']);
+    rows.push(['Do', 'Continue scheduled measurements; a value near the model does not establish health']);
+    rows.push(['Avoid', 'Changing fluid, salt or medication on your own']);
+    rows.push(['Symptoms', s.symptoms.length ? esc(s.symptoms.join(', ')) : 'None reported']);
+    rows.push(['Why', 'The model is a group average, not a target to hit']);
+  } else {
+    rows.push(['Reads as', `<b>${esc(lead.label)}</b> ${lead.value} ${esc(lead.unit)} · `
+      + `model says ${lead.reference} · that is ${lead.difference_pp > 0 ? '+' : ''}${lead.difference_pp} pp off`]);
+    rows.push(['Do', lead.advice.map(a => `<span class="yes">→ ${esc(a)}</span>`).join('<br>')]);
+    if (lead.concerns.length) {
+      rows.push(['Possible causes', lead.concerns.map(cn => `· ${esc(cn)}`).join('　')]);
+    }
+    rows.push(['Avoid', 'Treating this as a diagnosis — these are possible explanations only']);
+    rows.push(['Symptoms', s.symptoms.length ? esc(s.symptoms.join(', ')) : 'None reported']);
+  }
+  $('rows').innerHTML = rows.map(([k, v]) =>
+    `<div class="row"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+
+  // table
+  $('tblBody').innerHTML = s.rows.map(r => {
+    const col = STATUS_COLOR[r.status] || 'var(--muted)';
+    const on = state.mi === r.indicator ? ' class="on"' : '';
+    return `<tr data-a="${r.indicator}"${on}>
+      <td>${esc(r.label)}</td>
+      <td>${r.value} <span style="color:var(--muted)">${esc(r.unit)}</span></td>
+      <td>${r.baseline}</td>
+      <td>${r.reference}</td>
+      <td style="color:${col}">${r.personal_pct > 0 ? '+' : ''}${r.personal_pct}%</td>
+      <td style="color:${col}">${r.difference_pp > 0 ? '+' : ''}${r.difference_pp} pp</td>
+      <td style="color:${col}">${r.status === 'NORMAL' ? 'Within tolerance' : 'Off the model'}</td>
+    </tr>`;
+  }).join('');
+
+  // guidance text
+  $('pkg').textContent = [
+    `FLIGHT DAY ${s.day} (${s.timestamp})`,
+    `Action: ${s.action}`,
+    '',
+    ...s.rows.flatMap(r => [
+      `${r.label}: ${r.value} ${r.unit}`,
+      `  baseline ${r.baseline} · modelled ${r.reference}`,
+      `  yours ${r.personal_pct > 0 ? '+' : ''}${r.personal_pct}% · study ${r.study_pct > 0 ? '+' : ''}${r.study_pct}%`
+        + ` · difference ${r.difference_pp > 0 ? '+' : ''}${r.difference_pp} pp`,
+      `  advice: ${r.advice.join(' / ')}`,
+      '']),
+    `Possible explanations are not diagnoses. Reference tolerances are fictional.`,
+  ].join('\n');
+
+  renderMarker();
+}
+
+function renderMarker() {
+  const card = $('markerCard');
+  const a = state.mi;
+  if (!a) { card.hidden = true; return; }
+  const c = caseOf();
+  const idx = state.si;
+  const pts = c.samples.map((s, k) => {
+    const r = s.rows.find(x => x.indicator === a);
+    return { k, day: s.day, value: r.value, reference: r.reference, unit: r.unit, label: r.label };
+  });
+  if (!pts.length) { card.hidden = true; return; }
+
+  const cur = pts[idx];
+  const first = pts[0];
+  card.hidden = false;
+  $('mTitle').textContent = cur.label;
+  $('mMeta').innerHTML = `Baseline <b>${c.baseline[a]}</b> ${esc(cur.unit)} · `
+    + `day ${first.day} → day ${pts[pts.length - 1].day} · `
+    + `reading <b>${cur.value}</b> vs modelled <b>${cur.reference}</b>`;
+
+  const vals = pts.flatMap(p => [p.value, p.reference]);
+  const W = 720, H = 150, P = { l: 10, r: 10, t: 12, b: 18 };
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = (hi - lo) * 0.15 || 1; lo -= pad; hi += pad;
+  const x = i => P.l + i * (W - P.l - P.r) / Math.max(pts.length - 1, 1);
+  const y = v => P.t + (hi - v) / (hi - lo) * (H - P.t - P.b);
+  const line = key => pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p[key]).toFixed(1)}`).join(' ');
+  const dot = `<circle cx="${x(idx).toFixed(1)}" cy="${y(cur.value).toFixed(1)}" r="5" fill="#f2c56f" stroke="#0a1e2b" stroke-width="1.5"/>`;
+  const ticks = [0, Math.floor(pts.length / 2), pts.length - 1]
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .map(i => `<text x="${x(i).toFixed(1)}" y="${H - 4}" fill="#5d7488" font-size="10" `
+      + `text-anchor="${i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}">Day ${pts[i].day}</text>`).join('');
+
+  $('mSpark').innerHTML =
+    `<path d="${line('reference')}" fill="none" stroke="#f2c56f" stroke-width="1.5" stroke-dasharray="4 4"/>`
+    + `<path d="${line('value')}" fill="none" stroke="#6fe0c0" stroke-width="1.8"/>`
+    + dot + ticks;
+}
+
+function go(delta) {
+  const c = caseOf();
+  state.si = Math.max(0, Math.min(state.si + delta, c.samples.length - 1));
+  render();
+}
+
+$('next').onclick = () => go(1);
+$('prev').onclick = () => go(-1);
+$('first').onclick = () => { state.si = 0; render(); };
+$('last').onclick = () => { state.si = caseOf().samples.length - 1; render(); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+});
+$('tblBody').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-a]');
+  if (!tr) return;
+  state.mi = state.mi === tr.dataset.a ? null : tr.dataset.a;
+  render();
+});
+$('baselineBar').addEventListener('click', e => {
+  const i = e.target.closest('i[data-k]');
+  if (!i) return;
+  state.si = +i.dataset.k;
+  render();
+});
+
+const sel = $('caseSel');
+sel.innerHTML = D.cases.map((c, i) =>
+  `<option value="${i}">${esc(c.label)}</option>`).join('');
+sel.value = '0';
+sel.addEventListener('change', () => {
+  state.ci = +sel.value; state.si = 0; state.mi = null; render();
+});
+
+render();
+</script>
+</body>
+</html>
